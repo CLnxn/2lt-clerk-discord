@@ -1,6 +1,8 @@
 import mysql.connector
+from mysql.connector.cursor import MySQLCursor
 from mysql.connector import errorcode
 from env import DB as config
+from internals.database.queryfactory import Query
 import logging
 query = dict[str,list]
 
@@ -22,7 +24,7 @@ class Database():
                 logging.warning("Database does not exist")
             else:
                 logging.warning(err)
-        
+    
     def initialiseDB(self):
         cursor = self.cnx.cursor()
         cursor.execute('USE service_bot') # no need to put EOL token
@@ -30,12 +32,45 @@ class Database():
         for entry in cursor:
             logging.debug(entry)
 
-    def _flushToDB(self):
-        self.cnx.commit()
-    def updateUsers(self, username: str, columns:query):
-        pass
-    
-    
     def getUsers(self):
         pass
+    def writeToTables(self, db_query: Query):
+        
+        pass
+    def getEntriesFromTables(self, db_query: Query):
+        """ This method call is expensive. Should only be used to initialise internal caches.\n 
+        Args:
+            db_query (Query): standardised database query
+        Returns:
+                {"tablename": 
+                    [
+                        { #entry 1
+                            col_name:val, 
+                            col2_name:val2, 
+                            ...etc
+                        },
+
+                        { #entry 2
+                            col_name:val, 
+                            col2_name:val2, 
+                            ...etc
+                        },
+                        ...
+                    ]
+                }
+        """
+        sql_queries = db_query.get_as_READ_SQL_queries()
+        csr = self.cnx.cursor()
+        results = {}
+        logging.info(sql_queries)
+        for table, sql_query in sql_queries:
+            try:
+                csr.execute(sql_query)
+                rows = csr.fetchall()
+                results[table] = rows
+            except mysql.connector.Error as err:
+                logging.critical(f"Error in finding data. Error: {err}")
+                results[table] = []
+        
+        return results
 

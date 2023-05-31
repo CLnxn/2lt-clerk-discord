@@ -12,12 +12,10 @@ class command(base):
         @describe(actions="What should I do?")
         @choices(actions=[
             Choice(name='when', value=1),
-            Choice(name='set', value=2),
-            Choice(name='who', value=3)
-
+            Choice(name='set', value=2)
         ])
         @checks.cooldown(2.0,1.0)
-        async def ord(interaction: discord.Interaction, actions: Choice[int]):
+        async def pay(interaction: discord.Interaction, actions: Choice[int]):
             channel = interaction.channel
             if actions.name == 'when':
                 # call to /when endpoints to retrieve data

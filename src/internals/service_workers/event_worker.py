@@ -26,7 +26,7 @@ class Worker():
         pass
 
 class WorkerThread(Thread):
-    def __init__(self, task, delay_seconds = 10, group: None = None, target: Callable[..., object] | None = None, name: str | None = None, args: Iterable[Any] = ..., kwargs: Mapping[str, Any] | None = None, *, daemon: bool | None = None) -> None:
+    def __init__(self, task, delay_seconds, group: None = None, target: Callable[..., object] | None = None, name: str | None = None, args: Iterable[Any] = ..., kwargs: Mapping[str, Any] | None = None, *, daemon: bool | None = None) -> None:
         super().__init__(group, target, name, args, kwargs, daemon=daemon)
         self.delay = delay_seconds
         self.task = task    
@@ -37,6 +37,3 @@ class WorkerThread(Thread):
             sleep(self.delay)
             self.task()
         logging.info("worker thread finished")
-logging.basicConfig(level=logging.DEBUG)
-worker = Worker()
-worker.start_working()
