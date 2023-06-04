@@ -1,7 +1,9 @@
-
+from internals.enums.enum import QueryToken
+import typing
+DEFAULT_TABLES = ['ns','users','reminders']
 class Query():
     
-    def __init__(self, mode='r') -> None:
+    def __init__(self, mode='r', selectAll=True) -> None:
         """ Builds a query sorted by insertion order\n
         Args:
             mode (str): 'r', 'w' or 'd', represents read, write and delete query respectively.
@@ -12,7 +14,7 @@ class Query():
                             "tables": list[str] | None (defaults to []):\n
                                 Specifies the tables in which to return entries from.\n
                             "columns": 
-                                In r mode, {tablename:[column1,...]} | None (defaults to {tablename1:*, tablename2:*, ...}):\n 
+                                In r mode, {tablename:[column1,...]} | None (defaults to {}):\n 
                                 specifies what columns of each table to return.\n
                                 In w mode, this structure is instead: {tablename: {column1:value1,...}} | None (defaults to {}):\n
                                 specifies the columns of a table to update with the indicated value.
@@ -23,23 +25,28 @@ class Query():
                             },
                             ...
                         }: Specifies to only return queries for each tablename in the query that match the column values specified in the matcher. 
-            self.mode: refer to Args
+            self.mode: refer to Args,
+            self.selectAll: specifies if all columns of every table should be selected. ('r' mode only)  
         """
         self.query = {}
         self.matcher:dict[str,dict] = {}
         self.mode = mode
+        self.selectAll = selectAll
         self._init_defaults()
     def _init_defaults(self):
         if self.mode == 'r':
             self.query["first_n"] = 1
             self.query["tables"] = []
-            self.query["columns"] = {'ns':'*'}
+            if self.selectAll:
+                self.query["columns"] = {tbl: QueryToken.WILDCARD.value for tbl in DEFAULT_TABLES}
+            else:
+                self.query["columns"] = {}
         elif self.mode == 'w' or self.mode == 'd':
             self.query["tables"] = []
             self.query["columns"] = {}
 
     def add_matcher(self, table:str, cols: dict[str,str]):
-        if not self.matcher[table]:
+        if table not in self.matcher:
             self.matcher[table] = cols
             return 
         for key in cols:
@@ -71,13 +78,22 @@ class Query():
     def set_columns_for_table(self, table:str, columns: list[str] | dict[str,str]=None):
         if not columns:
             if self.mode == 'r':
-                columns = '*'
+                columns = QueryToken.WILDCARD.value
             elif self.mode == 'w':
                 columns = {}
             else: 
-                columns = '*'
+                columns = QueryToken.WILDCARD.value
         self.query["columns"][table] = columns
     
+    def get_all_table_columns(self) -> dict[str, list | str] | dict[str, dict]:
+        return self.query["columns"]
+    def get_columns(self, table:str):
+        if table in self.query["columns"]:
+            return self.query["columns"][table]
+        if self.mode == 'r':
+            return []
+        elif self.mode == 'w':
+            return {}
     def get_tables(self) -> list[str]:
         return self.query["tables"]
     def get_first_n(self) -> int:
@@ -100,10 +116,10 @@ class Query():
             cols = self.query["columns"][table] # cols = * in r mode
             # building {0}
             if type(cols) == list:
-                cols = _build_columns_sql_query(cols)
+                cols = _build_columns_sql_query(cols, quotes=False)
             # building {2}
             match_component = ''
-            if self.matcher[table]:
+            if table in self.matcher:
                 match_component += 'WHERE '
                 for match_col in self.matcher[table]:
                     match_component += '{0}={1} AND '.format(match_col, self.matcher[table][match_col])
@@ -118,26 +134,34 @@ class Query():
     def get_as_WRITE_SQL_queries(self) -> list | None:
         if self.mode != 'w':
             return None
+        sqls = []
+        # build {3}
+        alias = 'AL1QS'
         for table in self.query["tables"]:
-            sqlstring = "INSERT INTO {0} {1} VALUES {2} ON DUPLICATE KEY UPDATE {3}"
+            sqlstring = "INSERT INTO {0} {1} VALUES {2} AS {3} ON DUPLICATE KEY UPDATE {4}"
 
             # build {1}
             cols_vals: dict[str,str] = self.query["columns"][table]
-            cols = _build_columns_sql_query(cols_vals, wrap=True)
+            cols = _build_columns_sql_query(cols_vals, wrap=True, quotes=False)
 
             # build {2}
             vals = _build_columns_sql_query(cols_vals.values(), wrap=True)
-            
-            # build {3}
-            
-
-def _build_columns_sql_query(cols: list[str], wrap=False, wrap_tokens='()'):
+            # build {4}
+            rules = ''
+            for col in cols_vals:
+                rules += table + '.' + col + '='+ alias+'.'+col + ',' 
+            rules = rules[:-1]
+            sqlstring = sqlstring.format(table,cols,vals, alias, rules)
+            sqls.append((table,sqlstring))
+        return sqls
+    
+def _build_columns_sql_query(cols: list[typing.Any], wrap=False, wrap_tokens='()', quotes=True):
     colstr = ''
     for col in cols:
-        if type(col) == str:
+        if quotes and type(col) == str:
             colstr += '\''+ col + '\'' + ','
         else:
-            colstr += col + ','
+            colstr += str(col) + ','
     colstr = colstr[:-1]
 
     if wrap:

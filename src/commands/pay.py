@@ -1,8 +1,14 @@
+import traceback
 import discord
 from discord.app_commands import CommandTree, Choice, checks, describe, choices
 from commands.commands import base
+from commands.exceptions.errors import CommandException, CommandErrorType
 import logging
-from validation.validator import datestring_validator
+import utility.validator as validator
+import utility.datetools as datetools
+from datetime import datetime
+import calendar
+import numbers
 class command(base):
     ACTIONS_TIMEOUT = 60.0
     def subscribe(self, tree: CommandTree):
@@ -16,32 +22,81 @@ class command(base):
         ])
         @checks.cooldown(2.0,1.0)
         async def pay(interaction: discord.Interaction, actions: Choice[int]):
-            channel = interaction.channel
             if actions.name == 'when':
-                # call to /when endpoints to retrieve data
-                date = "insert_date_here"
-                remaining_days = 0
-                await interaction.response.send_message(f"You pay this month will come in {remaining_days} days on: {date}")
+                # call to /pay when endpoints to retrieve data
+                try:
+                    pay, payday = self.api.getPay(interaction.user.id)
+                    pay = "{:.2f}".format(pay)
+                    now = datetime.now()
+                    
+                    days_remain = datetools.getRemainingDaysInMonth(now)+payday if now.day > payday else payday-now.day
+                    if days_remain == 1:
+                        await interaction.response.send_message(f"Your pay of ${pay} will come in Tomorrow!")
+                    elif days_remain == 0:
+                        await interaction.response.send_message(f"Today is your pay day. Congrats on ${pay}")
+                    else:
+                        await interaction.response.send_message(f"Your pay of ${pay} this month will come in {days_remain} days!")
+                    return
+                except:
+                    await interaction.response.send_message(f"Oh no! Looks like there was an error in processing your pay day.")
+
+
 
             elif actions.name == 'set':
-                
-               
-                await interaction.response.send_message("Which day of the month is your payday? Please give me a number.")
-    
-                msg = await tree.client.wait_for(
-                    'message', 
-                    timeout=self.ACTIONS_TIMEOUT, 
-                    check=self.init_msg_check(channel.id,interaction.user))
-                
-                validation_result, obj = datestring_validator(msg.content)
-
-                if not validation_result:
-                    await channel.send("Oh no, your input format seems incorrect. Do check again.")
-                    return
-                # call to /set endpoint to set data
-                internals_obj = {""} 
-                await channel.send("ORD Date set!")
-
-                
+                try:
+                    await self._handleSet(interaction,tree)
+                except:
+                    traceback.print_exc()
+                    logging.error("error in handling /pay set")
+                return
             elif actions.name == 'who':
                 await interaction.response.send_message("Who's pay day are you curious about?")
+    
+
+
+
+    async def _handleSet(self, interaction: discord.Interaction, tree: CommandTree):
+        channel = interaction.channel
+        await interaction.response.send_message("Which day of the month is your payday? Please give me a number.")
+        # message = await interaction.original_response()
+        # await message.add_reaction("\N{THUMBS UP SIGN}")
+
+        msg = await tree.client.wait_for(
+            'message', 
+            timeout=self.ACTIONS_TIMEOUT, 
+            check=self.init_msg_check(channel.id,interaction.user))
+        
+        status, obj = datetools.isDayOfMonth(msg.content)
+
+        if not status:
+            if obj == CommandErrorType.EXCEED_DAY_OF_MONTH_EXCEPTION:
+                await channel.send("Oops! Looks like you aren't getting paid this month. Please try again.")
+            else:
+                await channel.send("Oops! The input I received isn't quite right. Please try again.")
+            return
+
+        await channel.send("How much are you getting paid? Enter your amount (e.g. 2023.20).")
+
+        msg = await tree.client.wait_for(
+            'message', 
+            timeout=self.ACTIONS_TIMEOUT, 
+            check=self.init_msg_check(channel.id,interaction.user))
+        
+        status, obj2 = self.isPayAmount(msg.content)
+        
+        if not status:
+            if obj2 == CommandErrorType.INVALID_FORMAT_EXCEPTION:
+                await channel.send("Oops! The input I received isn't quite right. Please try again.")
+            else:
+                # not implemented
+                await channel.send("Oops! Looks like I am unable to process your input.")
+            return
+        self.api.setPay(interaction.user.id, obj2, obj)
+        await channel.send("Pay day set!")
+        
+    
+    def isPayAmount(self, input) -> tuple[bool, CommandException | float]:
+        return validator.isFloat(input)
+
+
+    

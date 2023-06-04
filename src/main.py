@@ -13,10 +13,10 @@ internals.start()
 
 intents = discord.Intents.default()
 intents.message_content = True
-client = AppClient(intents=intents)
+client = AppClient(intents=intents, internal_hooks=internals.expose_command_hooks())
+
+        
 
 
 
-
-
-# client.run(TOKEN)
+client.run(TOKEN)

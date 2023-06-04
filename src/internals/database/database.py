@@ -3,8 +3,19 @@ from mysql.connector.cursor import MySQLCursor
 from mysql.connector import errorcode
 from env import DB as config
 from internals.database.queryfactory import Query
+from internals.enums.enum import QueryToken
 import logging
+
 query = dict[str,list]
+
+logger = logging.getLogger("mysql.connector")
+logger.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s- %(message)s")
+
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
 
 class Database():
     def __init__(self) -> None:
@@ -29,14 +40,26 @@ class Database():
         cursor = self.cnx.cursor()
         cursor.execute('USE service_bot') # no need to put EOL token
         cursor.execute('SELECT * FROM users')
+        
         for entry in cursor:
             logging.debug(entry)
 
-    def getUsers(self):
+
+    def deleteFromTables(self, db_queries: list[Query]):
         pass
-    def writeToTables(self, db_query: Query):
-        
-        pass
+    def writeToTables(self, db_queries: list[Query]):
+        csr = self.cnx.cursor()
+        for db_query in db_queries:
+            sql_queries = db_query.get_as_WRITE_SQL_queries()
+            logging.info(f"writing queries to DB: {sql_queries}")
+            for table, sql_query in sql_queries:
+                try:
+                    csr.execute(sql_query)
+                except mysql.connector.Error as err:
+                    logging.critical(f"Error in uploading data. Error: {err}")
+
+        self.cnx.commit()
+
     def getEntriesFromTables(self, db_query: Query):
         """ This method call is expensive. Should only be used to initialise internal caches.\n 
         Args:
@@ -67,10 +90,14 @@ class Database():
             try:
                 csr.execute(sql_query)
                 rows = csr.fetchall()
-                results[table] = rows
+                logging.debug(csr.column_names)
+                # reshaping data
+                cols = csr.column_names
+                ln = len(cols) 
+                results[table] = [{cols[i]:row[i] for i in range(ln)} for row in rows]
             except mysql.connector.Error as err:
                 logging.critical(f"Error in finding data. Error: {err}")
-                results[table] = []
+                return {}
         
         return results
 

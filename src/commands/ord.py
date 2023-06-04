@@ -3,7 +3,8 @@ import discord
 from discord.app_commands import CommandTree, Choice, checks, describe, choices
 from commands.commands import base
 import logging
-from validation.validator import datestring_validator
+from datetime import datetime
+from utility.validator import datestring_validator
 class command(base):
     ACTIONS_TIMEOUT = 60.0
     def subscribe(self, tree: CommandTree):
@@ -23,9 +24,19 @@ class command(base):
             channel = interaction.channel
             if actions.name == 'when':
                 # call to /when endpoints to retrieve data
-                date = "insert_date_here"
-                remaining_days = 0
-                await interaction.response.send_message(f"You will ord in {remaining_days} days on: {date}")
+                date: datetime = self.api.getORD(interaction.user.id)
+                if type(date) != datetime:
+                    await interaction.response.send_message("You have not set your ord date.")
+                else:
+                    dateStr = "{0}/{1}/{2}".format(date.day,date.month,date.year)
+                    remaining_days = (date - datetime.now()).days
+                    if remaining_days > 0:
+                        await interaction.response.send_message(f"You will ord in {remaining_days} days on: {dateStr}!")
+                    elif remaining_days == 0:
+                        await interaction.response.send_message(f"{remaining_days} days to ord! ORDLO")
+                    else:
+                        await interaction.response.send_message(f"You orded {-remaining_days} days ago on: {dateStr}!")                    
+
 
             elif actions.name == 'set':
 
@@ -42,7 +53,7 @@ class command(base):
                     await channel.send("Oh no, the date format seems incorrect. Do check again.")
                     return
                 # call to /set endpoint to set data
-                
+                self.api.setORD(interaction.user.id, obj)
                 
                 await channel.send("ORD Date set!")
 
