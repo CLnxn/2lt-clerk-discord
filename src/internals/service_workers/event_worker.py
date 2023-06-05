@@ -12,7 +12,7 @@ UPDATE_PERIOD_SECONDS = 10
 
 class Worker():
     def __init__(self, state) -> None:
-        self.workerthread = WorkerThread(self.work_task, UPDATE_PERIOD_SECONDS)
+        self.workerthread = WorkerThread(self.task, UPDATE_PERIOD_SECONDS)
         self.state: internals.InternalState = state
         self.counter = 0
         self.mappingRule = self.createMappingRule()
@@ -29,21 +29,21 @@ class Worker():
         dbRef = self.state.database
         return {InternalMethodTypes.UPDATE: dbRef.writeToTables, InternalMethodTypes.DELETE: dbRef.deleteFromTables}
 
-    def start_working(self):
+    def start(self):
         logging.info("service worker is starting")
         self.workerthread.start()
         
-    def stop_working(self):
+    def stop(self):
         self.workerthread.isRunning = False
         logging.warning("service worker is stopping")
 
-    def work_task(self):
+    def task(self):
         logging.info("worker task started.")
-        self.updateDB()
+        self.updateDatabase()
         logging.info("worker task ended.")
 
 
-    def updateDB(self):
+    def updateDatabase(self):
         records = self.state.events.flush()
         grps = self.sortingFactory(records)
         for grp in grps:

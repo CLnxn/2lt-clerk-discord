@@ -45,7 +45,7 @@ class command(base):
             elif actions.name == 'set':
                 try:
                     paymodal = modals.PayModal()
-                    paymodal.add_submit_hook(self._handleSet)
+                    paymodal.addSubmitHook(self._handleSet)
                     await interaction.response.send_modal(paymodal)
 
                 except:

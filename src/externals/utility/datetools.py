@@ -5,11 +5,11 @@ import calendar
 from externals.commands.exceptions.errors import CommandErrorType
 import externals.utility.validator as validator
 
-def get_last_day_of_mth(date: datetime):
+def getLastDayMonth(date: datetime):
         return calendar.monthrange(date.year, date.month)[1]
 
 def getRemainingDaysInMonth(date: datetime):
-        return get_last_day_of_mth(date) - date.day
+        return getLastDayMonth(date) - date.day
 
 
 def isDayOfMonth(input) -> tuple[bool, CommandErrorType | int]:
@@ -19,7 +19,7 @@ def isDayOfMonth(input) -> tuple[bool, CommandErrorType | int]:
             return False, digitOrErrObj
         try:
             dom = int(input)
-            max_dom = get_last_day_of_mth(datetime.now())
+            max_dom = getLastDayMonth(datetime.now())
             if dom <=0 or dom > max_dom:
                 raise Exception()
         except:

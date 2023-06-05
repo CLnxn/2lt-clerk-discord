@@ -38,7 +38,7 @@ class PayModal(discord.ui.Modal, title="What is your pay?"):
         
 
     #TODO: abstract hook functionality into a parent class
-    def add_submit_hook(self, hook: typing.Callable[[discord.Interaction, typing.Any, typing.Any],None]):
+    def addSubmitHook(self, hook: typing.Callable[[discord.Interaction, typing.Any, typing.Any],None]):
         self._submithooks.append(hook)
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -75,7 +75,7 @@ class OrdModal(discord.ui.Modal, title="When do you ORD?"):
         self.add_item(self.ord_date_title)
         self._submithooks = []
         
-    def add_submit_hook(self, hook: typing.Callable[[discord.Interaction, typing.Any],None]):
+    def addSubmitHook(self, hook: typing.Callable[[discord.Interaction, typing.Any],None]):
         self._submithooks.append(hook)
 
     async def on_submit(self, interaction: discord.Interaction):

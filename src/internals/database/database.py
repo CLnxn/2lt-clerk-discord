@@ -51,7 +51,7 @@ class Database():
     @mixins.handleDBConnection
     def writeToTables(self, db_queries: list[Query], csr: MySQLCursor=None):
         for db_query in db_queries:
-            sql_queries = db_query.get_as_WRITE_SQL_queries()
+            sql_queries = db_query.getWriteSQLs()
             logging.info(f"writing queries to DB: {sql_queries}")
             for table, sql_query in sql_queries:
                 try:
@@ -82,7 +82,7 @@ class Database():
                     ]
                 }
         """
-        sql_queries = db_query.get_as_READ_SQL_queries()
+        sql_queries = db_query.getReadSQLs()
         results = {}
         logging.info(sql_queries)
         for table, sql_query in sql_queries:

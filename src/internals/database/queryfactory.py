@@ -32,8 +32,8 @@ class Query():
         self.matcher:dict[str,dict] = {}
         self.mode = mode
         self.selectAll = selectAll
-        self._init_defaults()
-    def _init_defaults(self):
+        self._initQueryDefaults()
+    def _initQueryDefaults(self):
         if self.mode == 'r':
             self.query["first_n"] = 1
             self.query["tables"] = []
@@ -45,37 +45,39 @@ class Query():
             self.query["tables"] = []
             self.query["columns"] = {}
 
-    def add_matcher(self, table:str, cols: dict[str,str]):
+    def addMatcher(self, table:str, cols: dict[str,str]):
         if table not in self.matcher:
             self.matcher[table] = cols
             return 
         for key in cols:
             self.matcher[table][key] = cols[key]
     
-    def set_first_n(self, n: int):
+    def setLimit(self, n: int):
         # illegal n
         if n <= 0:
             return
         self.query["first_n"] = n
     
-    def set_tables(self, tables: list[str]):
+    def setTableNames(self, tables: list[str]):
+        """Sets tables as given in args. No Op if empty list or other datatype is provided."""
         # ignore empty tables
-        if tables == []:
+        if tables == [] or type(tables) != list:
             return
         self.query["tables"] = tables
-        self.update_columns()
+        self.updateColumns()
 
-    def add_table(self, table: str):
+    def addNewTable(self, table: str):
+        """Adds a new table entry into the query. Replaces existing table if present"""
         if table not in self.query["tables"]:
             self.query["tables"].append(table) 
-            self.set_columns_for_table(table)
+            self.setTableColumn(table)
 
-    def update_columns(self):
+    def updateColumns(self):
         for table_name in self.query["tables"]:
-            self.set_columns_for_table(table_name)
+            self.setTableColumn(table_name)
 
 
-    def set_columns_for_table(self, table:str, columns: list[str] | dict[str,str]=None):
+    def setTableColumn(self, table:str, columns: list[str] | dict[str,str]=None):
         if not columns:
             if self.mode == 'r':
                 columns = QueryToken.WILDCARD.value
@@ -85,21 +87,21 @@ class Query():
                 columns = QueryToken.WILDCARD.value
         self.query["columns"][table] = columns
     
-    def get_all_table_columns(self) -> dict[str, list | str] | dict[str, dict]:
+    def getAllTableColumns(self) -> dict[str, list | str] | dict[str, dict]:
         return self.query["columns"]
-    def get_columns(self, table:str):
+    def getTableColumn(self, table:str):
         if table in self.query["columns"]:
             return self.query["columns"][table]
         if self.mode == 'r':
             return []
         elif self.mode == 'w':
             return {}
-    def get_tables(self) -> list[str]:
+    def getTableNames(self) -> list[str]:
         return self.query["tables"]
-    def get_first_n(self) -> int:
+    def getLimit(self) -> int:
         return self.query["first_n"]
     
-    def get_as_READ_SQL_queries(self) -> list | None:
+    def getReadSQLs(self) -> list | None:
         """
         Should only called for self.mode='r'.\n
         Returns:
@@ -116,7 +118,7 @@ class Query():
             cols = self.query["columns"][table] # cols = * in r mode
             # building {0}
             if type(cols) == list:
-                cols = _build_columns_sql_query(cols, quotes=False)
+                cols = _buildSQLQueryColumns(cols, quotes=False)
             # building {2}
             match_component = ''
             if table in self.matcher:
@@ -131,7 +133,7 @@ class Query():
         return sqls
     # In the future might want to figure out a way to group queries of the same value size together without messing up insertion order
     # Allows for bulk insertions which are less costly
-    def get_as_WRITE_SQL_queries(self) -> list | None:
+    def getWriteSQLs(self) -> list | None:
         if self.mode != 'w':
             return None
         sqls = []
@@ -142,10 +144,10 @@ class Query():
 
             # build {1}
             cols_vals: dict[str,str] = self.query["columns"][table]
-            cols = _build_columns_sql_query(cols_vals, wrap=True, quotes=False)
+            cols = _buildSQLQueryColumns(cols_vals, wrap=True, quotes=False)
 
             # build {2}
-            vals = _build_columns_sql_query(cols_vals.values(), wrap=True)
+            vals = _buildSQLQueryColumns(cols_vals.values(), wrap=True)
             # build {4}
             rules = ''
             for col in cols_vals:
@@ -155,7 +157,7 @@ class Query():
             sqls.append((table,sqlstring))
         return sqls
     
-def _build_columns_sql_query(cols: list[typing.Any], wrap=False, wrap_tokens='()', quotes=True):
+def _buildSQLQueryColumns(cols: list[typing.Any], wrap=False, wrap_tokens='()', quotes=True):
     colstr = ''
     for col in cols:
         if quotes and type(col) == str:

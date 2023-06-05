@@ -12,21 +12,21 @@ class CommandApi():
     def setORD(self, user_id: int, date: datetime):
         datestr = date.isoformat()
         query = Query(mode='w')
-        query.add_table(InternalTypes.NS.value)
+        query.addNewTable(InternalTypes.NS.value)
         column_query = {InternalTypes.USER_ID.value: user_id, 
                         InternalTypes.NS_DATETIME_FIELD.value: datestr}
         
-        query.set_columns_for_table(InternalTypes.NS.value, column_query)
+        query.setTableColumn(InternalTypes.NS.value, column_query)
 
         record = Record(InternalMethodTypes.UPDATE, user_id, query)
         self.events.post(record)
     
     def getORD(self, user_id: int):
         query = Query(mode='r', selectAll=False)
-        query.add_table(InternalTypes.NS.value)
+        query.addNewTable(InternalTypes.NS.value)
         column_query = [InternalTypes.NS_DATETIME_FIELD.value]
-        query.set_columns_for_table(InternalTypes.NS.value, column_query)
-        query.add_matcher(InternalTypes.NS.value, {InternalTypes.USER_ID.value: user_id})
+        query.setTableColumn(InternalTypes.NS.value, column_query)
+        query.addMatcher(InternalTypes.NS.value, {InternalTypes.USER_ID.value: user_id})
 
         record = Record(InternalMethodTypes.GET, user_id, query)
         result, err = self.cache.getRecord(record)  
@@ -48,22 +48,22 @@ class CommandApi():
 
     def setPay(self, user_id: int, pay_amt: float, pay_dom: int):
         query = Query(mode='w')
-        query.add_table(InternalTypes.NS.value)
+        query.addNewTable(InternalTypes.NS.value)
         column_query = {InternalTypes.USER_ID.value: user_id, 
                         InternalTypes.NS_PAY_AMOUNT_FIELD.value: pay_amt, 
                         InternalTypes.NS_PAY_DAY_OF_MTH_FIELD.value: pay_dom}
-        query.set_columns_for_table(InternalTypes.NS.value, column_query)
+        query.setTableColumn(InternalTypes.NS.value, column_query)
         record = Record(InternalMethodTypes.UPDATE, user_id, query)
         self.events.post(record)
 
     def getPay(self, user_id: int) -> tuple[float,int] | None:
         query = Query(mode='r', selectAll=False)
-        query.add_table(InternalTypes.NS.value)
+        query.addNewTable(InternalTypes.NS.value)
         column_query = [InternalTypes.NS_PAY_AMOUNT_FIELD.value,
                         InternalTypes.NS_PAY_DAY_OF_MTH_FIELD.value]
         
-        query.set_columns_for_table(InternalTypes.NS.value, column_query)
-        query.add_matcher(InternalTypes.NS.value, {InternalTypes.USER_ID.value: user_id})
+        query.setTableColumn(InternalTypes.NS.value, column_query)
+        query.addMatcher(InternalTypes.NS.value, {InternalTypes.USER_ID.value: user_id})
         record = Record(InternalMethodTypes.GET, user_id, query)
         result, err = self.cache.getRecord(record)
 
@@ -80,6 +80,6 @@ class CommandApi():
         else:
             return pay, pay_day
 
-    
+
 
     

@@ -16,7 +16,7 @@ class AppClient(discord.Client):
         ord.command(self.api).subscribe(self.tree)
         pay.command(self.api).subscribe(self.tree)
 
-    def list_loaded_commands(self):
+    def listLoadedCommands(self):
         cmds = self.tree.get_commands()
         
         for cmd in cmds:

@@ -12,13 +12,13 @@ class InternalState():
         self.database = Database()
         self.events = EventBus()
         self.cache = Cache(self.database)
-    def expose_command_hooks(self):
+    def getAPI(self):
         return CommandApi(self.events, self.cache)
 
 
     def start(self):
-        self.cache.initialiseCache()
+        self.cache.initCache()
         self.cache.subscribeToEventBus(self.events)
         self.worker = Worker(self)
-        self.worker.start_working()
+        self.worker.start()
 

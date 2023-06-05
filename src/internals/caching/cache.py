@@ -79,7 +79,7 @@ class Cache():
                 logging.critical(f"error in appending to {tbl_key} table for user with id: {user_id}. Error: {type(err)}, {err}")
                 continue
 
-    def initialiseCache(self):
+    def initCache(self):
         records = self._retrieveRecords()
         # cache entry initialising
         for user in records[InternalTypes.USERS.value]:
@@ -101,8 +101,8 @@ class Cache():
     def _retrieveRecords(self, tables_query:list[str] = DEFAULT_TABLES):
         """Gets the first ENTRY_LIMIT records from selected tables in db and inserts into self.cache"""
         db_query = Query()
-        db_query.set_tables(tables_query)
-        db_query.set_first_n(Cache.ENTRY_LIMIT)
+        db_query.setTableNames(tables_query)
+        db_query.setLimit(Cache.ENTRY_LIMIT)
         result = self.database.getEntriesFromTables(db_query)
 
        
@@ -112,9 +112,9 @@ class Cache():
     
     def addUserID(self, user_id: int):
         query = Query(mode='w')
-        query.add_table(InternalTypes.USERS.value)
+        query.addNewTable(InternalTypes.USERS.value)
         column_query = {InternalTypes.ID.value: user_id}
-        query.set_columns_for_table(InternalTypes.USERS.value, column_query)
+        query.setTableColumn(InternalTypes.USERS.value, column_query)
         self.database.writeToTables([query])
 
     def onNewDeleteRecord(self, event: NewRecordEvent):
@@ -123,7 +123,7 @@ class Cache():
     def onNewUpdateRecord(self, event: NewRecordEvent):
         record = event.record
         query = record.data
-        records = dict(query.get_all_table_columns())
+        records = dict(query.getAllTableColumns())
         for key in records:
             records[key] = [records[key]]
         
@@ -173,7 +173,7 @@ class Cache():
     def getFromCache(self, key: str, query: Query) -> dict | None:
         logging.debug('getFromCache() start')
         result = {}
-        tbl_col_dict = query.get_all_table_columns()    
+        tbl_col_dict = query.getAllTableColumns()    
         logging.debug(tbl_col_dict)
         for tbl in tbl_col_dict:
             if tbl not in self.cache[key]:
@@ -186,7 +186,7 @@ class Cache():
             result_tbl = []
             # find & filter data from cache based on the input read query, and whether table allows multiple or single entries  
             if not self.tableEntryMergeRule[tbl]:
-                
+
                 for entry in self.cache[key][tbl]:
                     ent = {}
                     for col in tbl_col_dict[tbl]:
