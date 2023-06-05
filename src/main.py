@@ -1,7 +1,7 @@
 
 import logging, discord
 from env import TOKEN
-from clients.appclient import AppClient 
+from externals.clients.appclient import AppClient 
 from internals.api.internals import InternalState
 def init_log(logfile = None, lvl = logging.DEBUG):
     logging.basicConfig(filename=logfile, level=lvl)

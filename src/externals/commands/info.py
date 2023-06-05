@@ -1,6 +1,6 @@
 import discord
 from discord.app_commands import CommandTree, Choice, checks, describe, choices
-from commands.commands import base
+from externals.commands.commands import base
 class command(base):
     def subscribe(self, tree: CommandTree):
         super().subscribe(tree)

@@ -42,7 +42,7 @@ class EventBus():
     def subscribeToEvent(self, eventType: EventType, handler):
         self.hooks[eventType].subscribe(handler)
             
-    def addRecord(self, record: Record):    
+    def post(self, record: Record):    
         self.queue.appendleft(record)
         self.hooks[EventType.NEW_RECORD_EVENT].fireEvent(record)
 

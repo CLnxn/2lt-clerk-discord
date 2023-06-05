@@ -1,6 +1,6 @@
 import discord
 from discord.app_commands import checks, describe
-from commands.commands import base
+from externals.commands.commands import base
 class command(base):
     def subscribe(self, tree: discord.app_commands.CommandTree):
         super().subscribe(tree)

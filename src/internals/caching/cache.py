@@ -38,7 +38,7 @@ class Cache():
         # if InternalTypes.USERS.value in records:
         #     del records[InternalTypes.USERS.value]
         
-        # TODO: decide whether to reject request if default id is valid but not in cache
+        # rejects request if default id is valid but not in cache
         if user_id != None and user_id not in self.cache:
             logging.warn(f"user_id {user_id} not in cache")
             return (False, ApiErrors.INVALID_USER_ID_ERROR)
@@ -59,9 +59,6 @@ class Cache():
 
             elif user_id == None:
                 continue
-            # if user_id not in self.cache:
-            #     self.createEntry(user_id)
-            #     logging.info(f"created new key in cache for user with id: {user_id}")
 
             try:
                 if tbl_key not in self.cache[user_id]:
@@ -77,7 +74,6 @@ class Cache():
                     self.cache[user_id][tbl_key].update(table_entry)
                 else:
                     self.cache[user_id][tbl_key].append(table_entry)
-                # logging.debug(f"new cache at table: {user_id} {self.cache[user_id][tbl_key]}")
             except Exception as err:
                 traceback.print_exc()
                 logging.critical(f"error in appending to {tbl_key} table for user with id: {user_id}. Error: {type(err)}, {err}")
@@ -190,6 +186,7 @@ class Cache():
             result_tbl = []
             # find & filter data from cache based on the input read query, and whether table allows multiple or single entries  
             if not self.tableEntryMergeRule[tbl]:
+                
                 for entry in self.cache[key][tbl]:
                     ent = {}
                     for col in tbl_col_dict[tbl]:

@@ -1,10 +1,11 @@
 
 import discord
 from discord.app_commands import CommandTree, Choice, checks, describe, choices
-from commands.commands import base
+from externals.commands.commands import base
+from externals.utility.validator import datestring_validator
+import externals.ui.modals.modals as modals 
 import logging
 from datetime import datetime
-from utility.validator import datestring_validator
 class command(base):
     ACTIONS_TIMEOUT = 60.0
     def subscribe(self, tree: CommandTree):
@@ -26,7 +27,7 @@ class command(base):
                 # call to /when endpoints to retrieve data
                 date: datetime = self.api.getORD(interaction.user.id)
                 if type(date) != datetime:
-                    await interaction.response.send_message("You have not set your ord date.")
+                    await interaction.response.send_message("Looks like you have not set your ord date.")
                 else:
                     dateStr = "{0}/{1}/{2}".format(date.day,date.month,date.year)
                     remaining_days = (date - datetime.now()).days
@@ -40,23 +41,20 @@ class command(base):
 
             elif actions.name == 'set':
 
-                await interaction.response.send_message("What is your ORD date? Please use DD/MM/YYYY format!")
-                
-                msg = await tree.client.wait_for(
-                    'message', 
-                    timeout=self.ACTIONS_TIMEOUT, 
-                    check=self.init_msg_check(channel.id,interaction.user))
-                
-                validation_result, obj = datestring_validator(msg.content)
-
-                if not validation_result:
-                    await channel.send("Oh no, the date format seems incorrect. Do check again.")
-                    return
-                # call to /set endpoint to set data
-                self.api.setORD(interaction.user.id, obj)
-                
-                await channel.send("ORD Date set!")
-
+                ordmodal = modals.OrdModal()
+                ordmodal.add_submit_hook(self._handleSet)
+                await interaction.response.send_modal(ordmodal)
                 
             elif actions.name == 'who':
                 await interaction.response.send_message("Who's ord date are you curious about?")
+
+    async def _handleSet(self, interaction: discord.Interaction, value):
+        logging.debug(f"date val: {value}")
+        validated, obj = datestring_validator(value)
+        if not validated:
+            await interaction.response.send_message("Oops! The date format seems incorrect. Do check again.")
+            return
+        # call to /set endpoint to set data
+        self.api.setORD(interaction.user.id, obj)
+
+        await interaction.response.send_message("ORD Date set!")

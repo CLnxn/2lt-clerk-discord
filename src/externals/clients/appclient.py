@@ -1,11 +1,11 @@
 from typing import Any
 import discord
 import logging
-from commands import ord, pay
+from externals.commands import ord, pay
 from discord.flags import Intents
-from internals.api.internals import Command_Internal_Hooks
+from internals.api.internals import CommandApi
 class AppClient(discord.Client):
-    def __init__(self, *, intents: Intents, internal_hooks: Command_Internal_Hooks, **options: Any) -> None:
+    def __init__(self, *, intents: Intents, internal_hooks: CommandApi, **options: Any) -> None:
         super().__init__(intents=intents, **options)
         self.tree = discord.app_commands.CommandTree(self)
         self.api = internal_hooks

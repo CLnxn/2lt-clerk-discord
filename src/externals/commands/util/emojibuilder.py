@@ -1,6 +1,6 @@
 import discord
 from datetime import datetime
-import utility.datetools as datetools
+import externals.utility.datetools as datetools
 emojiIDMap = {
     11:":one:",
     12:":two:",

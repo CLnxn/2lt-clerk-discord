@@ -8,7 +8,7 @@ from internals.events.events import NewRecordEvent
 from internals.enums.enum import InternalMethodTypes
 from internals.caching.records import Record
 
-UPDATE_PERIOD_SECONDS = 3
+UPDATE_PERIOD_SECONDS = 10
 
 class Worker():
     def __init__(self, state) -> None:
@@ -38,17 +38,19 @@ class Worker():
         logging.warning("service worker is stopping")
 
     def work_task(self):
+        logging.info("worker task started.")
         self.updateDB()
+        logging.info("worker task ended.")
+
 
     def updateDB(self):
         records = self.state.events.flush()
         grps = self.sortingFactory(records)
-        # logging.info("Commencing Scheduled Write to Database.")
         for grp in grps:
             db_func = grp[0]
             
             db_func([rec.data for rec in grp[1]])
-        # logging.info("Completed Scheduled Write to Database.")
+
     # takes in records, returns an array of the tuple: (db_op_function,list[records])
     def sortingFactory(self, records: list[Record]):
         if not records:
@@ -66,7 +68,6 @@ class Worker():
             records_blk = (self.mappingRule[prev_record_type],[record])
         
         record_grps.append(records_blk)
-        # logging.debug(f"end of sortingFactory: {record_grps}, start: {records}")
         return record_grps
 
 
@@ -79,7 +80,7 @@ class WorkerThread(Thread):
         self.delay = delay_seconds
         self.task = task   
         self._kill = Event()
-        self.daemon = True # should be set to true in production
+        self.daemon = True # set to true in production, stops when main thread stops
         
     def run(self) -> None:
         self.isRunning = True

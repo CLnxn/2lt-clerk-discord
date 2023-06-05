@@ -1,6 +1,6 @@
 from dateutil.parser import parse
 
-from commands.exceptions.errors import CommandErrorType
+from externals.commands.exceptions.errors import CommandErrorType
 DATE_FORMAT='DD/MM/YYYY'
 DATE_SPLIT_TOKEN = '/'
 def datestring_validator(date_string, format=DATE_FORMAT, split_token=DATE_SPLIT_TOKEN):

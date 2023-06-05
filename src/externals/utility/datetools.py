@@ -2,8 +2,8 @@
 from datetime import datetime
 import calendar
 
-from commands.exceptions.errors import CommandErrorType
-import utility.validator as validator
+from externals.commands.exceptions.errors import CommandErrorType
+import externals.utility.validator as validator
 
 def get_last_day_of_mth(date: datetime):
         return calendar.monthrange(date.year, date.month)[1]

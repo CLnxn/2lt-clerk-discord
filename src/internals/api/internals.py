@@ -4,7 +4,7 @@ from internals.database.queryfactory import Query
 from internals.events.eventbus import EventBus
 from internals.service_workers.event_worker import Worker 
 from internals.caching.cache import Cache
-from internals.api.hooks import Command_Internal_Hooks
+from internals.api.hooks import CommandApi
 
 
 class InternalState():
@@ -13,7 +13,7 @@ class InternalState():
         self.events = EventBus()
         self.cache = Cache(self.database)
     def expose_command_hooks(self):
-        return Command_Internal_Hooks(self.events, self.cache)
+        return CommandApi(self.events, self.cache)
 
 
     def start(self):
