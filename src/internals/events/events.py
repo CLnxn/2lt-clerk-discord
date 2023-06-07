@@ -25,3 +25,17 @@ class NewRecordEventHooks(GenericEventHooks):
 class NewRecordEvent():
     def __init__(self, record: Record) -> None:
         self.record = record
+
+
+class FlushEventHooks(GenericEventHooks):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def fireEvent(self, source):
+        super().fireEvent()
+        for hook_fn in self.hooks:
+            hook_fn(FlushEvent(source))
+
+class FlushEvent():
+    def __init__(self, source) -> None:
+        self.source = source

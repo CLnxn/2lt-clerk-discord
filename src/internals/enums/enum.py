@@ -23,6 +23,7 @@ class EventType(Enum):
     NEW_GET_RECORD_EVENT = 1
     NEW_DELETE_RECORD_EVENT = 2
     NEW_UPDATE_RECORD_EVENT = 3
+    FLUSH_EVENT = 4
 
 class QueryToken(Enum):
     WILDCARD = '*'
@@ -32,3 +33,4 @@ class ApiErrors(Enum):
     INVALID_USER_ID_ERROR=0
     EMPTY_RECORDS_ERROR=1
     CACHE_MISS_ERROR=2
+    LOCK_ERROR = 3

@@ -7,6 +7,7 @@ import logging, traceback
 
 from internals.events.eventbus import EventBus
 from internals.events.events import NewRecordEvent
+from internals.errors.error import CacheInitError
 
 class Cache():
     ENTRY_LIMIT = 20
@@ -45,7 +46,8 @@ class Cache():
         
         # fill cache with tbl data
         for tbl_key in records:
-            table = records[tbl_key]
+            # list of objects each with col:val pairs (nullable)
+            table = records[tbl_key] 
             self._updateTable(table, tbl_key, user_id, self.tableEntryMergeRule[tbl_key])
 
         return (True, None)
@@ -81,6 +83,11 @@ class Cache():
 
     def initCache(self):
         records = self._retrieveRecords()
+        if InternalTypes.USERS.value not in records:
+            if records:
+                raise CacheInitError()
+            logging.info(f"empty cache initialised.")
+            return
         # cache entry initialising
         for user in records[InternalTypes.USERS.value]:
             if InternalTypes.ID.value not in user:
@@ -92,7 +99,7 @@ class Cache():
         
         # update cache with tbl data
         self.updateCache(records)
-        logging.debug(f"cache: {self.cache}")
+        logging.info(f"initialised cache: {self.cache}")
 
     def createEntry(self, user_id):
         if user_id not in self.cache:

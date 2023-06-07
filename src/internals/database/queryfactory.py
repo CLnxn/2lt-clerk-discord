@@ -51,7 +51,6 @@ class Query():
             return 
         for key in cols:
             self.matcher[table][key] = cols[key]
-    
     def setLimit(self, n: int):
         # illegal n
         if n <= 0:
@@ -137,10 +136,10 @@ class Query():
         if self.mode != 'w':
             return None
         sqls = []
-        # build {3}
+        # build 
         alias = 'AL1QS'
         for table in self.query["tables"]:
-            sqlstring = "INSERT INTO {0} {1} VALUES {2} AS {3} ON DUPLICATE KEY UPDATE {4}"
+            sqlstring = "INSERT INTO {0} {1} VALUES {2} ON DUPLICATE KEY UPDATE {3};"
 
             # build {1}
             cols_vals: dict[str,str] = self.query["columns"][table]
@@ -148,12 +147,12 @@ class Query():
 
             # build {2}
             vals = _buildSQLQueryColumns(cols_vals.values(), wrap=True)
-            # build {4}
+            # build {3}
             rules = ''
             for col in cols_vals:
-                rules += table + '.' + col + '='+ alias+'.'+col + ',' 
+                rules += table + '.' + col + '=VALUES('+ col +'),' 
             rules = rules[:-1]
-            sqlstring = sqlstring.format(table,cols,vals, alias, rules)
+            sqlstring = sqlstring.format(table,cols,vals, rules)
             sqls.append((table,sqlstring))
         return sqls
     

@@ -30,7 +30,7 @@ class PayModal(discord.ui.Modal, title="What is your pay?"):
             style=discord.TextStyle.short,
             label="Which day of the month are you getting paid?",
             required=True,
-            placeholder="1-{0}".format(datetools.get_last_day_of_mth(datetime.now()))
+            placeholder="1-{0}".format(datetools.getLastDayMonth(datetime.now()))
         )
         self.add_item(self.pay_amt_title)
         self.add_item(self.pay_day_title)

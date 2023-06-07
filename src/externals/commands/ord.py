@@ -2,7 +2,7 @@
 import discord
 from discord.app_commands import CommandTree, Choice, checks, describe, choices
 from externals.commands.commands import base
-from externals.utility.validator import datestring_validator
+from externals.utility.validator import validateDate
 import externals.ui.modals.modals as modals 
 import logging
 from datetime import datetime
@@ -42,7 +42,7 @@ class command(base):
             elif actions.name == 'set':
 
                 ordmodal = modals.OrdModal()
-                ordmodal.add_submit_hook(self._handleSet)
+                ordmodal.addSubmitHook(self._handleSet)
                 await interaction.response.send_modal(ordmodal)
                 
             elif actions.name == 'who':
@@ -50,7 +50,7 @@ class command(base):
 
     async def _handleSet(self, interaction: discord.Interaction, value):
         logging.debug(f"date val: {value}")
-        validated, obj = datestring_validator(value)
+        validated, obj = validateDate(value)
         if not validated:
             await interaction.response.send_message("Oops! The date format seems incorrect. Do check again.")
             return

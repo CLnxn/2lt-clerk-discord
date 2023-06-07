@@ -1,5 +1,5 @@
 from collections.abc import Callable, Iterable, Mapping
-import logging
+import logging, traceback
 from threading import Thread, Event
 from time import sleep
 from typing import Any
@@ -44,7 +44,13 @@ class Worker():
 
 
     def updateDatabase(self):
-        records = self.state.events.flush()
+        try:
+            records = self.state.events.flush()
+        except Exception as err:
+            traceback.print_exc()
+            logging.error(err)
+            return
+        
         grps = self.sortingFactory(records)
         for grp in grps:
             db_func = grp[0]

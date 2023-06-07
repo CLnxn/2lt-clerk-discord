@@ -19,8 +19,11 @@ class CommandApi():
         query.setTableColumn(InternalTypes.NS.value, column_query)
 
         record = Record(InternalMethodTypes.UPDATE, user_id, query)
-        self.events.post(record)
-    
+        try:
+            self.events.post(record)
+        except Exception as err:
+            return False, err
+        
     def getORD(self, user_id: int):
         query = Query(mode='r', selectAll=False)
         query.addNewTable(InternalTypes.NS.value)
@@ -54,8 +57,11 @@ class CommandApi():
                         InternalTypes.NS_PAY_DAY_OF_MTH_FIELD.value: pay_dom}
         query.setTableColumn(InternalTypes.NS.value, column_query)
         record = Record(InternalMethodTypes.UPDATE, user_id, query)
-        self.events.post(record)
-
+        try:
+            self.events.post(record)
+        except Exception as err:
+            return False, err
+        
     def getPay(self, user_id: int) -> tuple[float,int] | None:
         query = Query(mode='r', selectAll=False)
         query.addNewTable(InternalTypes.NS.value)

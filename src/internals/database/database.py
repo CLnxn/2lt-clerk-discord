@@ -25,7 +25,7 @@ logger.addHandler(stream_handler)
 
 class Database():
     def __init__(self) -> None:
-        self.connect()
+        result = self.connect()
         self.initialiseDB()
     def connect(self):
         try:
@@ -39,7 +39,8 @@ class Database():
         except mysql.connector.Error as err:
             traceback.print_exc()
             logging.error(err)
-
+            return False
+        return True
     @mixins.handleDBConnection
     def initialiseDB(self, csr: MySQLCursor = None):
         csr.execute('USE service_bot')
