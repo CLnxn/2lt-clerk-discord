@@ -1,12 +1,14 @@
 from datetime import datetime
 from internals.events.eventbus import EventBus
 from internals.caching.records import Record
-from internals.caching.cache import Cache
+from internals.caching.usercache import UsersCache
 from internals.database.queryfactory import Query
-from internals.enums.enum import InternalMethodTypes, InternalTypes
+from internals.enums.enum import InternalMethodTypes, InternalTypes, RemindersScope
 import logging, traceback
+
+from internals.api.notifier import Reminder
 class CommandApi():
-    def __init__(self, eventsQueue: EventBus, cache: Cache) -> None:
+    def __init__(self, eventsQueue: EventBus, cache: UsersCache) -> None:
         self.events = eventsQueue
         self.cache = cache
     def setORD(self, user_id: int, date: datetime):
@@ -86,6 +88,53 @@ class CommandApi():
         else:
             return pay, pay_day
 
-
+    def getUserReminders(self, user_id: int, limit=100):
+        query = Query(mode='r', selectAll=False)
+        query.setLimit(limit)
+        query.addNewTable(InternalTypes.REMINDERS.value)
+        col_query = [InternalTypes.REMINDERS_CONTENT_FIELD,
+                     InternalTypes.REMINDERS_DATE_CREATED_FIELD,
+                     InternalTypes.REMINDERS_DATE_DEADLINE_FIELD,
+                     InternalTypes.ID.value]
+        
+        query.setTableColumn(InternalTypes.REMINDERS.value, col_query)
+        matcher = {
+                    InternalTypes.USER_ID.value: user_id, 
+                    InternalTypes.REMINDERS_SCOPE_FIELD.value: RemindersScope.PERSONAL
+                    }
+        query.addMatcher(InternalTypes.REMINDERS.value, matcher)
+        record = Record(InternalMethodTypes.GET, user_id, query)
+        result, err = self.cache.getRecord(record)
+        if not result:
+            logging.error(f"error in getUserReminders: {err}")
+            return None
+        try:
+            reminders = result[InternalTypes.REMINDERS.value]
+            reminder_list = []
+            for reminder in reminders:
+                reminder_list.append(Reminder.fromRaw(reminder))
+        except:
+            traceback.print_exc()
+            logging.error(f"Error in getting pay & pay_day: {err}")
+            return None
+        else:
+            return reminder_list
+    def getGuildReminders(self, guild_id: int):
+        pass
+    def getGuildChannelReminders(self, guild_id, channel_id):
+        pass
+    def setUserReminders(self, user_id: int, content, call_date):
+        pass
+    def setGuildReminders(self, user_id: int, guild_id: int):
+        pass
+    def setGuildChannelReminders(self, guild_id, channel_id):
+        pass
+    def deleteUserReminder(self, user_id: int, reminder_id: int):
+        pass
+    
+    def deleteUserReminders(self, user_id: int):
+        pass
+    def updateUserReminders(self, user_id: int, reminder_id, content, new_call_date):
+        pass
 
     

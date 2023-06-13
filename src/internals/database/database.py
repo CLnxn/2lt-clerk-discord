@@ -4,7 +4,7 @@ from mysql.connector import errorcode
 from env import DB as config
 from internals.database.queryfactory import Query
 import internals.database.mixins as mixins
-from internals.enums.enum import QueryToken
+from internals.enums.enum import QueryToken, InternalTypes
 import logging, traceback
 
 query = dict[str,list]
@@ -21,8 +21,8 @@ logger.addHandler(stream_handler)
 
 
 
-
-
+USERS_REFERENCED_TABLES = ['users','ns','reminders']
+GUILDS_REFERENCED_TABLES =['guilds','reminders','channels']
 class Database():
     def __init__(self) -> None:
         result = self.connect()
@@ -44,7 +44,9 @@ class Database():
     @mixins.handleDBConnection
     def initialiseDB(self, csr: MySQLCursor = None):
         csr.execute('USE service_bot')
-
+        # TESTING PURPOSES:
+        csr.execute("INSERT INTO reminders (user_id,content,date_created, date_deadline) VALUES (1,'xd',NOW(), NOW()+ INTERVAL 5 SECOND);")
+        csr.execute("INSERT INTO reminders (user_id,content,date_created, date_deadline) VALUES (1,'xd',NOW(), NOW()+ INTERVAL 5 SECOND);")
     
     @mixins.handleDBConnection
     def deleteFromTables(self, db_queries: list[Query], csr: MySQLCursor=None):
@@ -59,10 +61,37 @@ class Database():
                     csr.execute(sql_query)
                 except mysql.connector.Error as err:
                     logging.critical(f"Error in uploading data. Error: {err}")
-
+    @mixins.handleDBConnection
+    def getDatedReminders(self, datetime_min: str, datetime_max:str, limit=2000, csr: MySQLCursor=None):
+        """ Gets all reminders before and equal to the <datetime_max> datetime in string.
+            This method is rather expensive & inefficient and should be called infrequently.
+            Returns:
+                a list of reminder objects, sorted from earliest to latest
+        """
+        dated_condition = "{0}>='{1}' AND {0}<='{2}'".format(
+            InternalTypes.REMINDERS_DATE_DEADLINE_FIELD.value,
+            datetime_min,
+            datetime_max
+        )
+        query = "SELECT * FROM {0} WHERE {1} ORDER BY {2} ASC LIMIT {3};".format(
+            InternalTypes.REMINDERS.value,
+            dated_condition,
+            InternalTypes.REMINDERS_DATE_DEADLINE_FIELD.value,
+            limit
+            )
+        labeled = []
+        try:
+            csr.execute(query)
+            rows = csr.fetchall()
+            cols = csr.column_names
+            labeled = self.labelColumns(rows, cols)
+        except mysql.connector.Error as err:
+            logging.critical(f"Error in retrieving dates. Error: {err}")
+        return labeled
+    
     @mixins.handleDBConnection
     def getEntriesFromTables(self, db_query: Query, csr: MySQLCursor=None):
-        """ This method call is expensive. Should only be used to initialise internal caches.\n 
+        """ This method call is expensive. Should only be used to initialise internal caches/Cache Miss.\n 
         Args:
             db_query (Query): standardised database query
         Returns:
@@ -90,13 +119,20 @@ class Database():
             try:
                 csr.execute(sql_query)
                 rows = csr.fetchall()
-                # reshaping data
                 cols = csr.column_names
-                ln = len(cols) 
-                results[table] = [{cols[i]:row[i] for i in range(ln)} for row in rows]
+                # reshaping data
+                results[table] = self.labelColumns(rows, cols)
             except mysql.connector.Error as err:
                 logging.critical(f"Error in finding data. Error: {err}")
                 return {}
         
         return results
-
+    
+    def labelColumns(self, rows, cols):
+        """ helper function to add columns (<cols>: tuple[col_name]) to each column in each datarow in <rows>:  list[{val1,val2,...}]
+        
+        Returns: 
+            List[{col1:val1,...}]
+            """
+        ln = len(cols) 
+        return [{cols[i]:row[i] for i in range(ln)} for row in rows]

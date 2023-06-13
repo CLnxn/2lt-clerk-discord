@@ -3,14 +3,16 @@ from internals.database.queryfactory import Query, DEFAULT_TABLES
 from internals.enums.enum import InternalTypes, InternalMethodTypes, EventType, QueryToken, ApiErrors
 from internals.database.database import Database
 from copy import deepcopy
-import logging, traceback
+import logging, traceback, random
 
 from internals.events.eventbus import EventBus
 from internals.events.events import NewRecordEvent
 from internals.errors.error import CacheInitError
 
 class Cache():
-    ENTRY_LIMIT = 20
+    OPTIMAL_ENTRY_LIMIT = 200 # optimal number of cache entries
+    OVERFLOW_FACTOR_LIMIT = 0.2 # the amount of entries exceeding the OPTIMAL_ENTRY_LIMIT that prompts an optimiseCache call
+    OPTIMISATION_FACTOR = 0.8 # the percentage of OPTIMAL_ENTRY_LIMIT entries present after optimising cache
     def __init__(self, source: Database) -> None:
         self.cache = {} # shape: {user_id: {table_name:[{cols:val, ...}, ...], ...}, ...}
         self.database = source
@@ -109,7 +111,7 @@ class Cache():
         """Gets the first ENTRY_LIMIT records from selected tables in db and inserts into self.cache"""
         db_query = Query()
         db_query.setTableNames(tables_query)
-        db_query.setLimit(Cache.ENTRY_LIMIT)
+        db_query.setLimit(Cache.OPTIMAL_ENTRY_LIMIT)
         result = self.database.getEntriesFromTables(db_query)
 
        
@@ -134,20 +136,27 @@ class Cache():
         for key in records:
             records[key] = [records[key]]
         
-        status, resObj = self.updateCache(records, record.owner_id)
+        status, resObj = self.updateCache(records, record.id_map[self.CACHE_KEY_TYPE])
 
         if not status:
             if resObj == ApiErrors.INVALID_USER_ID_ERROR:
                 # write userid directly to db
-                self.addUserID(record.owner_id)
+                self.addUserID(record.id_map[self.CACHE_KEY_TYPE])
 
 
         # logging.debug(f"updated cache: {self.cache}")
         # logging.info("onNewUpdateRecord")
-
     def getRecord(self, record: Record) -> tuple[dict | None, None | ApiErrors]:
+        """Gets a record from cache, or from DB, if there is a cache miss.
+        
+        Returns a tuple of result, err for the given record arg. result is None if there is an error, and err will be defined.
+            If no error, result will have a shape given:
+             <result>: {tablename: [{col:val,...},...], unique_tablename: {col:val, ...}, ...}
+
+             unique_tablename represents tables which have a False boolean in TableEntryMergeRule and tablename represents when it is True.
+        """
         read_query = record.data
-        id = record.owner_id   
+        id = record.id_map[self.CACHE_KEY_TYPE]   
         CACHE_MISS = False
         result = None
 
@@ -176,7 +185,7 @@ class Cache():
         
         return (result, None)
     
-    # returns {tablename: [{col:val,...},...], uniq_tablename: {col:val, ...}, ...}
+    # returns {tablename: [{col:val,...},...], unique_tablename: {col:val, ...}, ...}
     def getFromCache(self, key: str, query: Query) -> dict | None:
         logging.debug('getFromCache() start')
         result = {}

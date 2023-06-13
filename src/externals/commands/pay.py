@@ -2,7 +2,7 @@ import traceback
 import discord
 from discord.app_commands import CommandTree, Choice, checks, describe, choices
 from externals.commands.commands import base
-from externals.commands.exceptions.errors import CommandException, CommandErrorType
+from externals.exceptions.errors import CommandException, CommandErrorType
 import logging
 import externals.ui.modals.modals as modals
 import externals.utility.datetools as datetools
@@ -11,8 +11,8 @@ import externals.utility.validator as validator
 from datetime import datetime
 class command(base):
     ACTIONS_TIMEOUT = 60.0
-    def subscribe(self, tree: CommandTree):
-        super().subscribe(tree)
+    def subscribeTo(self, tree: CommandTree):
+        super().subscribeTo(tree)
         
         @tree.command(name="pay", description="When is your pay day?")
         @describe(actions="What should I do?")

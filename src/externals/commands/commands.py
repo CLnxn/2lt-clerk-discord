@@ -3,7 +3,7 @@ from internals.api.internals import CommandApi
 class base():
     def __init__(self, hooks: CommandApi) -> None:
         self.api = hooks
-    def subscribe(self, tree: discord.app_commands.CommandTree):
+    def subscribeTo(self, tree: discord.app_commands.CommandTree):
         pass
 
     # returns a check for whether message is from same channel & author as specified in args 

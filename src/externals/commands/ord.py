@@ -8,8 +8,8 @@ import logging
 from datetime import datetime
 class command(base):
     ACTIONS_TIMEOUT = 60.0
-    def subscribe(self, tree: CommandTree):
-        super().subscribe(tree)
+    def subscribeTo(self, tree: CommandTree):
+        super().subscribeTo(tree)
         
         @tree.command(name="ord", description="When do you ord?")
         @describe(actions="What should I do?")

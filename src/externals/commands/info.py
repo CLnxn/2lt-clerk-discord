@@ -2,8 +2,8 @@ import discord
 from discord.app_commands import CommandTree, Choice, checks, describe, choices
 from externals.commands.commands import base
 class command(base):
-    def subscribe(self, tree: CommandTree):
-        super().subscribe(tree)
+    def subscribeTo(self, tree: CommandTree):
+        super().subscribeTo(tree)
         @tree.command(name="info", description="When do you ord?")
         @describe(actions="What should I do?")
         @choices(actions=[

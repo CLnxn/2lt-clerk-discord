@@ -1,5 +1,4 @@
 from collections import deque
-from internals.caching.records import Record
 import math
 import logging
 
@@ -42,7 +41,7 @@ class EventBus():
     
     # event chaining without additional event inheritance overhead
     def _onNewRecordEvent(self, event: NewRecordEvent):
-        self.hooks[self.eventsMap[event.record.type]].fireEvent(event.record)
+        self.hooks[self.eventsMap[event.record.method]].fireEvent(event.record)
 
     def subscribeToEvent(self, eventType: EventType, handler):
         self.hooks[eventType].subscribe(handler)
