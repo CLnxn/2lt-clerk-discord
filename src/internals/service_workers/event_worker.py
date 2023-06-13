@@ -16,16 +16,12 @@ class Worker(base_worker.Worker):
         self.mappingRule = self.createMappingRule()
         self.name = "event"
 
-    # deprecated. Will be replaced in the future with a scheduled update db task
-    # def onUpdateDBEvent(self, event: NewRecordEvent):
-    #     record = event.record
-    #     if record.type == InternalMethodTypes.SET or record.type == InternalMethodTypes.UPDATE:
-    #         self.state.database.writeToTables(record.data)
-
-    # does not create mapping rules for GET methods
+    # does not create mapping rules for GET methods (GETs should not be added to the eventbus)
     def createMappingRule(self):
         dbRef = self.state.database
-        return {InternalMethodTypes.UPDATE: dbRef.writeToTables, InternalMethodTypes.DELETE: dbRef.deleteFromTables}
+        return {InternalMethodTypes.SET: dbRef.writeToTables, 
+                InternalMethodTypes.UPDATE: dbRef.writeToTables, 
+                InternalMethodTypes.DELETE: dbRef.deleteFromTables}
 
     def task(self):
         logging.info(f"{self.name} worker task started.")
@@ -52,16 +48,16 @@ class Worker(base_worker.Worker):
         if not records:
             return []
         record_grps = []
-        prev_record_type = records[0].method
-        records_blk = (self.mappingRule[prev_record_type], []) 
+        prev_record_method = records[0].method
+        records_blk = (self.mappingRule[prev_record_method], []) 
         for record in records:
-            if record.method == prev_record_type:
+            if record.method == prev_record_method:
                 records_blk[1].append(record)
-                prev_record_type = record.method
+                prev_record_method = record.method
                 continue
             record_grps.append(records_blk)
-            prev_record_type = record.method
-            records_blk = (self.mappingRule[prev_record_type],[record])
+            prev_record_method = record.method
+            records_blk = (self.mappingRule[prev_record_method],[record])
         
         record_grps.append(records_blk)
         return record_grps

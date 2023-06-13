@@ -41,6 +41,8 @@ class UsersCache(parent.Cache):
             self.updateCache(records)
             logging.info(f"initialised cache: {self.cache}")
 
+    def onNewSetRecord(self, event: NewRecordEvent):
+        return self.onNewUpdateRecord(event)
     def onNewDeleteRecord(self, event: NewRecordEvent):
         record = event.record
         logging.info("onNewDeleteRecord")

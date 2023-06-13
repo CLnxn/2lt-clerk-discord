@@ -123,8 +123,23 @@ class CommandApi():
         pass
     def getGuildChannelReminders(self, guild_id, channel_id):
         pass
-    def setUserReminders(self, user_id: int, content, call_date):
-        pass
+    def setUserReminders(self, user_id: int, content, call_date_str: str):
+        query = Query(mode='w')
+        query.addNewTable(InternalTypes.REMINDERS.value)
+        column_query = {
+            InternalTypes.USER_ID.value: user_id, 
+            InternalTypes.REMINDERS_CONTENT_FIELD.value: content,
+            InternalTypes.REMINDERS_DATE_CREATED_FIELD.value: datetime.now().isoformat(),
+            InternalTypes.REMINDERS_DATE_DEADLINE_FIELD.value: call_date_str,
+            InternalTypes.REMINDERS_SCOPE_FIELD.value: RemindersScope.PERSONAL,
+        }
+        query.setTableColumn(InternalTypes.REMINDERS.value, column_query)
+        record = Record(InternalMethodTypes.SET, user_id, query)
+        try:
+            self.events.post(record)
+        except Exception as err:
+            return False, err
+        
     def setGuildReminders(self, user_id: int, guild_id: int):
         pass
     def setGuildChannelReminders(self, guild_id, channel_id):

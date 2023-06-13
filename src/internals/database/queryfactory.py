@@ -3,10 +3,10 @@ import typing
 DEFAULT_TABLES = ['ns','users','reminders']
 class Query():
     
-    def __init__(self, mode='r', selectAll=True) -> None:
+    def __init__(self, mode: typing.Literal['r','w','d', 'u'] ='r', selectAll=True) -> None:
         """ Builds a query sorted by insertion order\n
         Args:
-            mode (str): 'r', 'w' or 'd', represents read, write and delete query respectively.
+            mode (str): 'r', 'w', 'd', or 'u' represents read, write, delete & update query respectively.
         Fields:
             self.query: {
                             "first_n": int | None (defaults to 1 for r mode):\n
@@ -41,7 +41,7 @@ class Query():
                 self.query["columns"] = {tbl: QueryToken.WILDCARD.value for tbl in DEFAULT_TABLES}
             else:
                 self.query["columns"] = {}
-        elif self.mode == 'w' or self.mode == 'd':
+        elif self.mode == 'w' or self.mode == 'd' or self.mode=='u':
             self.query["tables"] = []
             self.query["columns"] = {}
 
@@ -100,6 +100,15 @@ class Query():
     def getLimit(self) -> int:
         return self.query["first_n"]
     
+    def _matcherToSQLForTable(self, table: str):
+        """returns an sql WHERE clause for a particular table query based on self.matcher"""
+        match_component = ''
+        if table in self.matcher:
+            match_component += 'WHERE '
+            for match_col in self.matcher[table]:
+                match_component += '{0}={1} AND '.format(match_col, self.matcher[table][match_col])
+            match_component = match_component[:-5]
+        return match_component
     def getReadSQLs(self) -> list | None:
         """
         Should only called for self.mode='r'.\n
@@ -119,12 +128,7 @@ class Query():
             if type(cols) == list:
                 cols = _buildSQLQueryColumns(cols, quotes=False)
             # building {2}
-            match_component = ''
-            if table in self.matcher:
-                match_component += 'WHERE '
-                for match_col in self.matcher[table]:
-                    match_component += '{0}={1} AND '.format(match_col, self.matcher[table][match_col])
-                match_component = match_component[:-5]
+            match_component = self._matcherToSQLForTable(table)
 
             sqlstring = sqlstring.format(cols, table, match_component, self.query["first_n"])
             sqls.append((table, sqlstring))
@@ -148,14 +152,32 @@ class Query():
             # build {2}
             vals = _buildSQLQueryColumns(cols_vals.values(), wrap=True)
             # build {3}
-            rules = ''
-            for col in cols_vals:
-                rules += table + '.' + col + '=VALUES('+ col +'),' 
-            rules = rules[:-1]
+            rules = _buildSQLRulesForTable(cols_vals, table)
             sqlstring = sqlstring.format(table,cols,vals, rules)
             sqls.append((table,sqlstring))
         return sqls
     
+
+    def getDeleteSQLs(self):
+        sqls = []
+        for table in self.query["tables"]:
+            sqlstring = "DELETE FROM {0} {2};"
+            where_clause = self._matcherToSQLForTable(table)
+
+            sqlstring = sqlstring.format(table,where_clause)
+            sqls.append((table, sqlstring))
+        return sqls
+    def getUpdateSQLs(self):
+        sqls = []
+        for table in self.query["tables"]:
+            sqlstring = "UPDATE {0} SET {1} {2};"
+            where_clause = self._matcherToSQLForTable(table)
+            rules = _buildSQLRulesForTable(self.getTableColumn(table), table)
+            sqlstring = sqlstring.format(table, rules, where_clause)
+            sqls.append((table, sqlstring))
+        return sqls
+    
+
 def _buildSQLQueryColumns(cols: list[typing.Any], wrap=False, wrap_tokens='()', quotes=True):
     colstr = ''
     for col in cols:
@@ -169,3 +191,11 @@ def _buildSQLQueryColumns(cols: list[typing.Any], wrap=False, wrap_tokens='()', 
         return wrap_tokens[0] + colstr + wrap_tokens[1]
     
     return colstr
+
+def _buildSQLRulesForTable(cols, table):
+    """Returns an sql string forming the SET clause heading in the UPDATE directive (or the UPDATE clause heading in ON DUPLICATE UPDATE)"""
+    rules = ''
+    for col in cols:
+        rules += table + '.' + col + '=VALUES('+ col +'),' 
+    rules = rules[:-1]
+    return rules

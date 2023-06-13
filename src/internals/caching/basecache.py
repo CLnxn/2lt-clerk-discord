@@ -23,6 +23,7 @@ class Cache():
     def subscribeToEventBus(self, eventbus: EventBus):
         eventbus.subscribeToEvent(EventType.NEW_DELETE_RECORD_EVENT, self.onNewDeleteRecord)
         eventbus.subscribeToEvent(EventType.NEW_UPDATE_RECORD_EVENT, self.onNewUpdateRecord)
+        eventbus.subscribeToEvent(EventType.NEW_SET_RECORD_EVENT, self.onNewSetRecord)
         
     def _createTableEntryMergeRule(self):
         raise NotImplementedError("_createTableEntryMergeRule is not implemented.")
@@ -104,6 +105,11 @@ class Cache():
         query.setTableColumn(self.CACHE_KEY_TYPE.value, column_query)
         self.database.writeToTables([query])
 
+        
+    def onNewSetRecord(self, event: NewRecordEvent):
+        
+        raise NotImplementedError("onNewSetRecord is not implemented.")
+        
     def onNewDeleteRecord(self, event: NewRecordEvent):
         
         raise NotImplementedError("onNewDeleteRecord is not implemented.")

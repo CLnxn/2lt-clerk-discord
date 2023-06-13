@@ -27,6 +27,7 @@ class EventBus():
             EventType.NEW_GET_RECORD_EVENT: NewRecordEventHooks(),
             EventType.NEW_DELETE_RECORD_EVENT: NewRecordEventHooks(),
             EventType.NEW_UPDATE_RECORD_EVENT: NewRecordEventHooks(),
+            EventType.NEW_SET_RECORD_EVENT: NewRecordEventHooks(),
             EventType.FLUSH_EVENT: FlushEventHooks()
             }
     def createEventMap(self):
@@ -34,6 +35,7 @@ class EventBus():
             InternalMethodTypes.GET: EventType.NEW_GET_RECORD_EVENT,
             InternalMethodTypes.DELETE: EventType.NEW_DELETE_RECORD_EVENT,
             InternalMethodTypes.UPDATE: EventType.NEW_UPDATE_RECORD_EVENT,
+            InternalMethodTypes.SET: EventType.NEW_SET_RECORD_EVENT,
             }
     
     def registerDefaultHandlers(self):
@@ -41,7 +43,8 @@ class EventBus():
     
     # event chaining without additional event inheritance overhead
     def _onNewRecordEvent(self, event: NewRecordEvent):
-        self.hooks[self.eventsMap[event.record.method]].fireEvent(event.record)
+        if event.record.method in self.eventsMap:
+            self.hooks[self.eventsMap[event.record.method]].fireEvent(event.record)
 
     def subscribeToEvent(self, eventType: EventType, handler):
         self.hooks[eventType].subscribe(handler)

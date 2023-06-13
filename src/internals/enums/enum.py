@@ -41,6 +41,7 @@ class EventType(Enum):
     NEW_GET_RECORD_EVENT = 1
     NEW_DELETE_RECORD_EVENT = 2
     NEW_UPDATE_RECORD_EVENT = 3
+    NEW_SET_RECORD_EVENT = 4
     FLUSH_EVENT = 4
 
 class QueryToken(Enum):

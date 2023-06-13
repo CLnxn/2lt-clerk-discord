@@ -1,12 +1,14 @@
 from internals.caching.records import Record
 from internals.database.queryfactory import Query
-from internals.enums.enum import InternalTypes, QueryToken, ApiErrors
+from internals.enums.enum import InternalTypes, ApiErrors, EventType
 from internals.database.database import Database, GUILDS_REFERENCED_TABLES
 import logging
 
 from internals.events.events import NewRecordEvent
 from internals.errors.error import CacheInitError
-import internals.caching.basecache as parent 
+from internals.events.eventbus import EventBus 
+import internals.caching.basecache as parent
+from src.internals.events.events import NewRecordEvent
 
 class GuildsCache(parent.Cache):
     def __init__(self, source: Database) -> None:
@@ -21,6 +23,7 @@ class GuildsCache(parent.Cache):
             InternalTypes.REMINDERS.value: False, # allows multiple entries
         }
     
+        
     def initCache(self):
         records = self._retrieveRecords(GUILDS_REFERENCED_TABLES)
         if self.CACHE_KEY_TYPE.value not in records:
@@ -40,7 +43,9 @@ class GuildsCache(parent.Cache):
         # update cache with tbl data
         self.updateCache(records)
         logging.info(f"initialised cache: {self.cache}")
-
+        
+    def onNewSetRecord(self, event: NewRecordEvent):
+        return self.onNewUpdateRecord(event)
     def onNewDeleteRecord(self, event: NewRecordEvent):
         record = event.record
         logging.info("onNewDeleteRecord")
