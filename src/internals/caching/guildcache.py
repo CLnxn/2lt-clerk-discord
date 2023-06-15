@@ -43,13 +43,13 @@ class GuildsCache(parent.Cache):
         # update cache with tbl data
         self.updateCache(records)
         logging.info(f"initialised cache: {self.cache}")
-        
+
     def onNewSetRecord(self, event: NewRecordEvent):
-        return self.onNewUpdateRecord(event)
+        return self.onNewInsertRecord(event)
     def onNewDeleteRecord(self, event: NewRecordEvent):
         record = event.record
         logging.info("onNewDeleteRecord")
-    def onNewUpdateRecord(self, event: NewRecordEvent):
+    def onNewInsertRecord(self, event: NewRecordEvent):
         record = event.record
         # check if cache is compatible
         if record.rtype != InternalTypes.WILDCARD and record.rtype != self.CACHE_KEY_TYPE:

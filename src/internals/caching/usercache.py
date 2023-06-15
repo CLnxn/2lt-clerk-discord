@@ -1,7 +1,7 @@
 from internals.caching.records import Record
 from internals.database.queryfactory import Query
 from internals.enums.enum import InternalTypes, InternalMethodTypes, EventType, QueryToken, ApiErrors
-from internals.database.database import Database, USERS_REFERENCED_TABLES
+from internals.database.database import Database, USERS_REFERENCED_TABLES, REMINDERS_TABLE_COLUMNS
 from copy import deepcopy
 import logging, traceback, random
 
@@ -41,12 +41,13 @@ class UsersCache(parent.Cache):
             self.updateCache(records)
             logging.info(f"initialised cache: {self.cache}")
 
+    
     def onNewSetRecord(self, event: NewRecordEvent):
-        return self.onNewUpdateRecord(event)
+        return self.onNewInsertRecord(event)
     def onNewDeleteRecord(self, event: NewRecordEvent):
         record = event.record
         logging.info("onNewDeleteRecord")
-    def onNewUpdateRecord(self, event: NewRecordEvent):
+    def onNewInsertRecord(self, event: NewRecordEvent):
         record = event.record
         # check if cache is compatible
         if record.rtype != InternalTypes.WILDCARD and record.rtype != self.CACHE_KEY_TYPE:

@@ -5,32 +5,29 @@ from internals.notify.notfiable import Notifiable, NotifiableController
 from internals.enums.enum import InternalTypes
 
 class Reminder(Notifiable):
-    def __init__(self, notif: Notifiable) -> None:
+    def __init__(self, notif: Notifiable, DEFAULT=None) -> None:
         super().__init__(notif.data, notif.id, notif.call_date)
-        data = notif.data
+        data_dict: dict = notif.data
         del self.data
         del self.type
-        self.date_created = data[InternalTypes.REMINDERS_DATE_CREATED_FIELD.value]
-        self.content = data[InternalTypes.REMINDERS_CONTENT_FIELD.value]
-        self.user_id = data[InternalTypes.USER_ID.value]
-        self.scope = data[InternalTypes.REMINDERS_SCOPE_FIELD.value]
-        if InternalTypes.GUILD_ID.value in data:
-            self.guild_id =  data[InternalTypes.GUILD_ID.value]
+        self.date_created = data_dict.get(InternalTypes.REMINDERS_DATE_CREATED_FIELD.value, DEFAULT)
+        self.content = data_dict.get(InternalTypes.REMINDERS_CONTENT_FIELD.value, DEFAULT)
+        self.user_id = data_dict.get(InternalTypes.USER_ID.value, DEFAULT)
+        self.scope = data_dict.get(InternalTypes.REMINDERS_SCOPE_FIELD.value, DEFAULT)
+        self.guild_id =  data_dict.get(InternalTypes.GUILD_ID.value, DEFAULT)
+        self.channel_id = data_dict.get(InternalTypes.CHANNEL_ID.value, DEFAULT)
         
-        if InternalTypes.CHANNEL_ID.value in data:
-            self.channel_id = data[InternalTypes.CHANNEL_ID.value]
-    def fromRaw(data_dict:dict):        
+    def fromRaw(data_dict:dict, DEFAULT=None):        
         """<data_dict>: {col:val,...}"""
         reminder = Reminder(Notifiable(None,None,None))
-        reminder.id = data_dict[InternalTypes.ID.value]
-        reminder.call_date = data_dict[InternalTypes.REMINDERS_DATE_DEADLINE_FIELD.value]
-        reminder.date_created = data_dict[InternalTypes.REMINDERS_DATE_CREATED_FIELD.value]
-        reminder.content = data_dict[InternalTypes.REMINDERS_CONTENT_FIELD.value]
-        if InternalTypes.GUILD_ID.value in data_dict:
-            reminder.guild_id =  data_dict[InternalTypes.GUILD_ID.value]
-        
-        if InternalTypes.CHANNEL_ID.value in data_dict:
-            reminder.channel_id = data_dict[InternalTypes.CHANNEL_ID.value]
+        reminder.id = data_dict.get(InternalTypes.ID.value, DEFAULT)
+        reminder.user_id = data_dict.get(InternalTypes.USER_ID.value, DEFAULT)
+        reminder.call_date = data_dict.get(InternalTypes.REMINDERS_DATE_DEADLINE_FIELD.value, DEFAULT)
+        reminder.date_created = data_dict.get(InternalTypes.REMINDERS_DATE_CREATED_FIELD.value, DEFAULT)
+        reminder.content = data_dict.get(InternalTypes.REMINDERS_CONTENT_FIELD.value, DEFAULT)
+        reminder.scope = data_dict.get(InternalTypes.REMINDERS_SCOPE_FIELD.value, DEFAULT)
+        reminder.guild_id =  data_dict.get(InternalTypes.GUILD_ID.value, DEFAULT)
+        reminder.channel_id = data_dict.get(InternalTypes.CHANNEL_ID.value, DEFAULT)
 
         return reminder
 class Notifier():

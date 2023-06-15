@@ -22,7 +22,7 @@ class Cache():
 
     def subscribeToEventBus(self, eventbus: EventBus):
         eventbus.subscribeToEvent(EventType.NEW_DELETE_RECORD_EVENT, self.onNewDeleteRecord)
-        eventbus.subscribeToEvent(EventType.NEW_UPDATE_RECORD_EVENT, self.onNewUpdateRecord)
+        eventbus.subscribeToEvent(EventType.NEW_INSERT_RECORD_EVENT, self.onNewUpdateRecord)
         
     def _createTableEntryMergeRule(self):
         return {
@@ -110,7 +110,7 @@ class Cache():
     def _retrieveRecords(self, tables_query:list[str] = DEFAULT_TABLES):
         """Gets the first ENTRY_LIMIT records from selected tables in db and inserts into self.cache"""
         db_query = Query()
-        db_query.setTableNames(tables_query)
+        db_query.initTables(tables_query)
         db_query.setLimit(Cache.OPTIMAL_ENTRY_LIMIT)
         result = self.database.getEntriesFromTables(db_query)
 

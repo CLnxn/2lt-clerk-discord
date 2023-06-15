@@ -57,8 +57,8 @@ class Query():
             return
         self.query["first_n"] = n
     
-    def setTableNames(self, tables: list[str]):
-        """Sets tables as given in args. No Op if empty list or other datatype is provided."""
+    def initTables(self, tables: list[str]):
+        """Sets tables as given in args and initialises empty columns for them. No Op if empty list or other datatype is provided."""
         # ignore empty tables
         if tables == [] or type(tables) != list:
             return
@@ -85,7 +85,8 @@ class Query():
             else: 
                 columns = QueryToken.WILDCARD.value
         self.query["columns"][table] = columns
-    
+    def getMatcherForTable(self, table: str):
+        return self.matcher[table]
     def getAllTableColumns(self) -> dict[str, list | str] | dict[str, dict]:
         return self.query["columns"]
     def getTableColumn(self, table:str):

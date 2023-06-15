@@ -22,6 +22,8 @@ class InternalTypes(Enum):
     REMINDERS_DATE_DEADLINE_FIELD="date_deadline"
     REMINDERS_DATE_CREATED_FIELD="date_created"
     REMINDERS_SCOPE_FIELD="scope"
+    REMINDERS_CACHE_ID_FIELD="cache_id"
+    REMINDERS_REPEATED_FIELD="repeated"
 
     WILDCARD = '*'
 class RemindersScope(IntEnum):
@@ -40,8 +42,9 @@ class EventType(Enum):
     NEW_RECORD_EVENT = 0
     NEW_GET_RECORD_EVENT = 1
     NEW_DELETE_RECORD_EVENT = 2
-    NEW_UPDATE_RECORD_EVENT = 3
+    NEW_INSERT_RECORD_EVENT = 3
     NEW_SET_RECORD_EVENT = 4
+    NEW_UPDATE_RECORD_EVENT = 5
     FLUSH_EVENT = 4
 
 class QueryToken(Enum):

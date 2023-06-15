@@ -6,9 +6,11 @@ from internals.enums.enum import InternalMethodTypes
 from internals.caching.records import Record
 from internals.service_workers.worker_thread import WorkerThread
 from internals.service_workers import base_worker
+from internals.errors.error import LockedError
 
 UPDATE_PERIOD_SECONDS = 10
-
+UPDATE_DURATION_DELAY_SECONDS = 0.5*UPDATE_PERIOD_SECONDS # the worst-case amount of time taken to perform the write DB task 
+RETRY_PERIOD_SECONDS = 0.8
 class Worker(base_worker.Worker):
     def __init__(self, state) -> None:
         super().__init__(UPDATE_PERIOD_SECONDS)
@@ -21,7 +23,9 @@ class Worker(base_worker.Worker):
         dbRef = self.state.database
         return {InternalMethodTypes.SET: dbRef.writeToTables, 
                 InternalMethodTypes.UPDATE: dbRef.writeToTables, 
-                InternalMethodTypes.DELETE: dbRef.deleteFromTables}
+                InternalMethodTypes.INSERT: dbRef.writeToTables,
+                InternalMethodTypes.DELETE: dbRef.writeToTables
+                }
 
     def task(self):
         logging.info(f"{self.name} worker task started.")
@@ -32,10 +36,11 @@ class Worker(base_worker.Worker):
     def updateDatabase(self):
         try:
             records = self.state.events.flush()
-        except Exception as err:
+        except LockedError as err:
             traceback.print_exc()
             logging.error(err)
-            return
+            sleep(RETRY_PERIOD_SECONDS)
+            return self.updateDatabase()
         
         grps = self.sortingFactory(records)
         for grp in grps:

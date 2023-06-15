@@ -4,9 +4,10 @@ from internals.caching.records import Record
 from internals.caching.usercache import UsersCache
 from internals.database.queryfactory import Query
 from internals.enums.enum import InternalMethodTypes, InternalTypes, RemindersScope
-import logging, traceback
+import logging, traceback, uuid
 
 from internals.api.notifier import Reminder
+from internals.notify.notif_id_factory import NotifIDFactory
 class CommandApi():
     def __init__(self, eventsQueue: EventBus, cache: UsersCache) -> None:
         self.events = eventsQueue
@@ -20,7 +21,7 @@ class CommandApi():
         
         query.setTableColumn(InternalTypes.NS.value, column_query)
 
-        record = Record(InternalMethodTypes.UPDATE, user_id, query)
+        record = Record(InternalMethodTypes.SET, user_id, query)
         try:
             self.events.post(record)
         except Exception as err:
@@ -58,7 +59,7 @@ class CommandApi():
                         InternalTypes.NS_PAY_AMOUNT_FIELD.value: pay_amt, 
                         InternalTypes.NS_PAY_DAY_OF_MTH_FIELD.value: pay_dom}
         query.setTableColumn(InternalTypes.NS.value, column_query)
-        record = Record(InternalMethodTypes.UPDATE, user_id, query)
+        record = Record(InternalMethodTypes.SET, user_id, query)
         try:
             self.events.post(record)
         except Exception as err:
@@ -132,6 +133,7 @@ class CommandApi():
             InternalTypes.REMINDERS_DATE_CREATED_FIELD.value: datetime.now().isoformat(),
             InternalTypes.REMINDERS_DATE_DEADLINE_FIELD.value: call_date_str,
             InternalTypes.REMINDERS_SCOPE_FIELD.value: RemindersScope.PERSONAL,
+            InternalTypes.REMINDERS_CACHE_ID_FIELD.value: NotifIDFactory.createUnique()
         }
         query.setTableColumn(InternalTypes.REMINDERS.value, column_query)
         record = Record(InternalMethodTypes.SET, user_id, query)

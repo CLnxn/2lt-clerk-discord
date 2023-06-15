@@ -7,3 +7,4 @@ class LockedError(Exception):
 class CacheInitError(Exception):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
+

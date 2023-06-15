@@ -20,9 +20,20 @@ logger.addHandler(stream_handler)
 
 
 
-
 USERS_REFERENCED_TABLES = ['users','ns','reminders']
 GUILDS_REFERENCED_TABLES =['guilds','reminders','channels']
+
+REMINDERS_TABLE_COLUMNS = [InternalTypes.ID.value,
+                           InternalTypes.USER_ID.value,
+                           InternalTypes.GUILD_ID.value,
+                           InternalTypes.CHANNEL_ID.value,
+                           InternalTypes.REMINDERS_CONTENT_FIELD.value,
+                           InternalTypes.REMINDERS_DATE_CREATED_FIELD.value,
+                           InternalTypes.REMINDERS_DATE_DEADLINE_FIELD.value,
+                           InternalTypes.REMINDERS_REPEATED_FIELD.value,
+                           InternalTypes.REMINDERS_SCOPE_FIELD.value,
+                           InternalTypes.REMINDERS_CACHE_ID_FIELD.value
+                           ]
 class Database():
     def __init__(self) -> None:
         result = self.connect()

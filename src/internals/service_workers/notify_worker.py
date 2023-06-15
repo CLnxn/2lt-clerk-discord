@@ -19,17 +19,18 @@ class Worker(base_worker.Worker):
         logging.info(f"{self.name} worker task started.")
         reminders = self.queryDatabase()
         queue = deque()
+        DEFAULT = None
         # queue shd be sorted by ascending order of date_deadline, (increasing index)  
         for reminder in reminders:
             id = reminder[InternalTypes.ID.value]
             call_date = reminder[InternalTypes.REMINDERS_DATE_DEADLINE_FIELD.value]
             obj = {
-                InternalTypes.USER_ID.value:reminder[InternalTypes.USER_ID.value],
-                InternalTypes.GUILD_ID.value:reminder[InternalTypes.GUILD_ID.value],
-                InternalTypes.CHANNEL_ID.value:reminder[InternalTypes.CHANNEL_ID.value],
-                InternalTypes.REMINDERS_SCOPE_FIELD.value:reminder[InternalTypes.REMINDERS_SCOPE_FIELD.value],
-                InternalTypes.REMINDERS_DATE_CREATED_FIELD.value:reminder[InternalTypes.REMINDERS_DATE_DEADLINE_FIELD.value],
-                InternalTypes.REMINDERS_CONTENT_FIELD.value:reminder[InternalTypes.REMINDERS_CONTENT_FIELD.value],
+                InternalTypes.USER_ID.value:reminder.get(InternalTypes.USER_ID.value, DEFAULT),
+                InternalTypes.GUILD_ID.value:reminder.get(InternalTypes.GUILD_ID.value, DEFAULT),
+                InternalTypes.CHANNEL_ID.value:reminder.get(InternalTypes.CHANNEL_ID.value, DEFAULT),
+                InternalTypes.REMINDERS_SCOPE_FIELD.value:reminder.get(InternalTypes.REMINDERS_SCOPE_FIELD.value, DEFAULT),
+                InternalTypes.REMINDERS_DATE_CREATED_FIELD.value:reminder.get(InternalTypes.REMINDERS_DATE_DEADLINE_FIELD.value, DEFAULT),
+                InternalTypes.REMINDERS_CONTENT_FIELD.value:reminder.get(InternalTypes.REMINDERS_CONTENT_FIELD.value, DEFAULT),
                 InternalTypes.REMINDERS_DATE_DEADLINE_FIELD.value:call_date
             }
 
@@ -45,6 +46,8 @@ class Worker(base_worker.Worker):
 
     def queryDatabase(self):
         now = datetime.now()
+        ts = now.timestamp()
+        self.controller.last_queried_timestamp = ts
         start = now.isoformat()
         end = (now + timedelta(hours=2,minutes=20)).isoformat()
         return self.database.getDatedReminders(start, end)

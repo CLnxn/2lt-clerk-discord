@@ -1,7 +1,7 @@
 from internals.caching.records import Record
 from internals.database.queryfactory import Query
 from internals.enums.enum import InternalTypes, InternalMethodTypes, EventType, QueryToken, ApiErrors
-from internals.database.database import Database
+from internals.database.database import REMINDERS_TABLE_COLUMNS, Database
 from copy import deepcopy
 import logging, traceback, random
 
@@ -22,7 +22,7 @@ class Cache():
 
     def subscribeToEventBus(self, eventbus: EventBus):
         eventbus.subscribeToEvent(EventType.NEW_DELETE_RECORD_EVENT, self.onNewDeleteRecord)
-        eventbus.subscribeToEvent(EventType.NEW_UPDATE_RECORD_EVENT, self.onNewUpdateRecord)
+        eventbus.subscribeToEvent(EventType.NEW_INSERT_RECORD_EVENT, self.onNewInsertRecord)
         eventbus.subscribeToEvent(EventType.NEW_SET_RECORD_EVENT, self.onNewSetRecord)
         
     def _createTableEntryMergeRule(self):
@@ -89,11 +89,18 @@ class Cache():
     def _retrieveRecords(self, tables_query:list[str]):
         """returns the first ENTRY_LIMIT records from selected tables from db"""
         db_query = Query()
-        db_query.setTableNames(tables_query)
+        db_query.initTables(tables_query)
+
+        if InternalTypes.REMINDERS.value in tables_query:
+            # ignores cache_id field when pulling from reminders table in db.
+            reminder_cols = REMINDERS_TABLE_COLUMNS.copy()
+            reminder_cols.remove(InternalTypes.REMINDERS_CACHE_ID_FIELD)
+            db_query.setTableColumn(InternalTypes.REMINDERS.value, reminder_cols)
+
         db_query.setLimit(Cache.OPTIMAL_ENTRY_LIMIT)
         result = self.database.getEntriesFromTables(db_query)
 
-       
+        
             
         logging.info(f"retrieved records: {result}")
         return result
@@ -105,7 +112,7 @@ class Cache():
         query.setTableColumn(self.CACHE_KEY_TYPE.value, column_query)
         self.database.writeToTables([query])
 
-        
+
     def onNewSetRecord(self, event: NewRecordEvent):
         
         raise NotImplementedError("onNewSetRecord is not implemented.")
@@ -114,9 +121,9 @@ class Cache():
         
         raise NotImplementedError("onNewDeleteRecord is not implemented.")
 
-    def onNewUpdateRecord(self, event: NewRecordEvent):
+    def onNewInsertRecord(self, event: NewRecordEvent):
 
-        raise NotImplementedError("onNewUpdateRecord is not implemented.")
+        raise NotImplementedError("onNewInsertRecord is not implemented.")
 
 
     def getRecord(self, record: Record) -> tuple[dict | None, None | ApiErrors]:
