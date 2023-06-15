@@ -9,6 +9,7 @@ from internals.enums.enum import InternalTypes
 import internals.notify.notfiable as notifiable
 import internals.database.database as db
 UPDATE_PERIOD_SECONDS = 5 # every 2h
+DELETE_GRACE_INTERVAL_SECONDS = 5 # The interval where reminders with deadlines within it but before the delete query datetime are not deleted.   
 class Worker(base_worker.Worker):
     def __init__(self, controller, database) -> None:
         super().__init__(UPDATE_PERIOD_SECONDS, isDaemon=True)
@@ -42,8 +43,15 @@ class Worker(base_worker.Worker):
             self.controller.pushNotifications(queue)
         else:
             logging.debug("queue is empty")
-        logging.info(f"{self.name} worker task ended.")
 
+        # delete task
+        self.clearDated()
+        
+        logging.info(f"{self.name} worker task ended.")
+    def clearDated(self):
+        now = datetime.now()
+        upper_bound = now - timedelta.seconds(DELETE_GRACE_INTERVAL_SECONDS)
+        self.database.deleteDatedReminders(upper_bound)
     def queryDatabase(self):
         now = datetime.now()
         ts = now.timestamp()

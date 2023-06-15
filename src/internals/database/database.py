@@ -60,8 +60,25 @@ class Database():
         csr.execute("INSERT INTO reminders (user_id,content,date_created, date_deadline) VALUES (1,'xd',NOW(), NOW()+ INTERVAL 5 SECOND);")
     
     @mixins.handleDBConnection
-    def deleteFromTables(self, db_queries: list[Query], csr: MySQLCursor=None):
-        pass
+    def deleteDatedReminders(self, datetime_max: str, csr: MySQLCursor=None):
+
+        dated_condition = "{0}<='{2}'".format(
+            InternalTypes.REMINDERS_DATE_DEADLINE_FIELD.value,
+            datetime_max
+        )
+
+        query = "DELETE FROM {0} WHERE {1}".format(
+            InternalTypes.REMINDERS.value,
+            dated_condition,
+        )
+        try:
+            csr.execute(query)
+        except mysql.connector.errors as err:
+            logging.error(f"error in deletingDatedReminders in database.py \n Error: {err}")
+            return False
+        else:
+            return True            
+
     @mixins.handleDBConnection
     def writeToTables(self, db_queries: list[Query], csr: MySQLCursor=None):
         for db_query in db_queries:
@@ -89,7 +106,7 @@ class Database():
             dated_condition,
             InternalTypes.REMINDERS_DATE_DEADLINE_FIELD.value,
             limit
-            )
+        )
         labeled = []
         try:
             csr.execute(query)
