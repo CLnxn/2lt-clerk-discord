@@ -15,23 +15,32 @@ class UsersCache(parent.Cache):
         self.setCKeyType(InternalTypes.USERS)
         # map of table-> whether sub entries should be merged or appended (aka if multiple values are allowed) 
         self.tableEntryMergeRule = self._createTableEntryMergeRule() 
+        self.tableEntryIdentifierMap = self._createTableEntryIdentifiers()
     def _createTableEntryMergeRule(self):
         return {
             InternalTypes.NS.value: True, # single entry only,
             InternalTypes.USERS.value: True, # single entry only
             InternalTypes.REMINDERS.value: False, # allows multiple entries
         }
+    
+    def _createTableEntryIdentifiers(self):
+        return {
+            InternalTypes.REMINDERS.value: (InternalTypes.ID.value, InternalTypes.REMINDERS_CACHE_ID_FIELD.value)
+        }
+    
+
     def initCache(self):
             records = self._retrieveRecords(USERS_REFERENCED_TABLES)
             if self.CACHE_KEY_TYPE.value not in records:
                 if records:
                     raise CacheInitError()
-                logging.info(f"empty cache initialised.")
+                # logging.info(f"empty cache initialised.")
+
                 return
             # cache entry initialising
             for main_entry in records[self.CACHE_KEY_TYPE.value]:
                 if InternalTypes.ID.value not in main_entry:
-                    logging.warning(f"id not in {self.CACHE_KEY_TYPE.value} table for {main_entry} ")
+                    # logging.warning(f"id not in {self.CACHE_KEY_TYPE.value} table for {main_entry} ")
                     continue
                 cache_key = main_entry[InternalTypes.ID.value]
 
@@ -39,21 +48,62 @@ class UsersCache(parent.Cache):
             
             # update cache with tbl data
             self.updateCache(records)
-            logging.info(f"initialised cache: {self.cache}")
+            # logging.info(f"initialised cache: {self.cache}")
 
     
     def onNewSetRecord(self, event: NewRecordEvent):
         return self.onNewInsertRecord(event)
     def onNewDeleteRecord(self, event: NewRecordEvent):
         record = event.record
-        logging.info("onNewDeleteRecord")
+        if record.rtype != InternalTypes.WILDCARD and record.rtype != self.CACHE_KEY_TYPE:
+            return
+        query = record.data
+        tbls = query.getTableNames()
+        for tbl in tbls:
+            matcher = query.getMatcherForTable(tbl)
+            if tbl == InternalTypes.REMINDERS.value:
+                if InternalTypes.REMINDERS_CACHE_ID_FIELD.value in matcher or InternalTypes.ID.value in matcher:
+                    # delete by id if present
+                    rules = {InternalTypes.REMINDERS_CACHE_ID_FIELD.value: matcher.get(InternalTypes.REMINDERS_CACHE_ID_FIELD.value, None),
+                             InternalTypes.ID.value: matcher.get(InternalTypes.ID.value, None)
+                             }
+                    self.deleteEntryFromCache(record.id_map[self.CACHE_KEY_TYPE], tbl, rules)
+                    continue
+                
+                self.deleteEntryFromCache(record.id_map[self.CACHE_KEY_TYPE], tbl, matcher, strict=True)
+                continue
+                 
+            self.deleteEntryFromCache(record.id_map[self.CACHE_KEY_TYPE], tbl, matcher)
+        # logging.info("onNewDeleteRecord")
+
+        
+    def onNewUpdateRecord(self, event: NewRecordEvent):
+        record = event.record
+        # check if cache is compatible
+        if record.rtype != InternalTypes.WILDCARD and record.rtype != self.CACHE_KEY_TYPE:
+            return
+        query = record.data
+        tables = dict(query.getAllTableColumns())
+        for tbl_hdr in tables:
+            tables[tbl_hdr] = [tables[tbl_hdr]]
+        
+        status, resObj = self.updateCache(tables, record.id_map[self.CACHE_KEY_TYPE], append=False)
+
+        if not status:
+            if resObj == ApiErrors.INVALID_CACHE_KEY_ERROR:
+                # write userid directly to db
+                self.addCacheKey(record.id_map[self.CACHE_KEY_TYPE])
+
     def onNewInsertRecord(self, event: NewRecordEvent):
         record = event.record
         # check if cache is compatible
         if record.rtype != InternalTypes.WILDCARD and record.rtype != self.CACHE_KEY_TYPE:
             return
         query = record.data
+        # copy data to prevent reference modifications
         records = dict(query.getAllTableColumns())
+        # logging.debug(f"onNewInsertRecord {records}")
+
         for key in records:
             records[key] = [records[key]]
         
@@ -94,7 +144,7 @@ class UsersCache(parent.Cache):
             # instant read from db
             logging.debug(f"cache missed")
             data = self.getFromDB(read_query)
-            logging.debug(f"data from db: {data}")
+            # logging.debug(f"data from db: {data}")
             status, result_obj  = self.updateCache(data, user_id)
 
             if not status:

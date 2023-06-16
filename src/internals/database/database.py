@@ -62,7 +62,7 @@ class Database():
     @mixins.handleDBConnection
     def deleteDatedReminders(self, datetime_max: str, csr: MySQLCursor=None):
 
-        dated_condition = "{0}<='{2}'".format(
+        dated_condition = "{0}<='{1}'".format(
             InternalTypes.REMINDERS_DATE_DEADLINE_FIELD.value,
             datetime_max
         )
@@ -89,6 +89,29 @@ class Database():
                     csr.execute(sql_query)
                 except mysql.connector.Error as err:
                     logging.critical(f"Error in uploading data. Error: {err}")
+
+    @mixins.handleDBConnection
+    def deleteFromTables(self, db_queries: list[Query], csr: MySQLCursor=None):
+        for db_query in db_queries:
+            sql_queries = db_query.getDeleteSQLs()
+            logging.info(f"writing queries to DB: {sql_queries}")
+            for table, sql_query in sql_queries:
+                try:
+                    csr.execute(sql_query)
+                except mysql.connector.Error as err:
+                    logging.critical(f"Error in uploading data. Error: {err}")
+
+    @mixins.handleDBConnection
+    def updateTables(self, db_queries: list[Query], csr: MySQLCursor=None):
+        for db_query in db_queries:
+            sql_queries = db_query.getUpdateSQLs()
+            logging.info(f"writing queries to DB: {sql_queries}")
+            for table, sql_query in sql_queries:
+                try:
+                    csr.execute(sql_query)
+                except mysql.connector.Error as err:
+                    logging.critical(f"Error in uploading data. Error: {err}")   
+
     @mixins.handleDBConnection
     def getDatedReminders(self, datetime_min: str, datetime_max:str, limit=2000, csr: MySQLCursor=None):
         """ Gets all reminders before and equal to the <datetime_max> datetime in string.

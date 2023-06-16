@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from internals.caching.records import Record
-
+import logging
 
 class GenericEventHooks():
     def __init__(self) -> None:
@@ -18,7 +18,6 @@ class NewRecordEventHooks(GenericEventHooks):
 
     def fireEvent(self, record: Record):
         super().fireEvent()
-        
         for hook_fn in self.hooks:
             hook_fn(NewRecordEvent(record))
            

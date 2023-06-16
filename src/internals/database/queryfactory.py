@@ -74,6 +74,14 @@ class Query():
     def updateColumns(self):
         for table_name in self.query["tables"]:
             self.setTableColumn(table_name)
+    def deleteColumnForTable(self, table: str, col_name):
+        if col_name in self.query["columns"][table]:
+            if self.mode == 'r':
+                self.query["columns"][table].remove(col_name)
+                # list type
+            else:
+                del self.query["columns"][table][col_name]
+                # dict type
 
 
     def setTableColumn(self, table:str, columns: list[str] | dict[str,str]=None):
@@ -107,7 +115,10 @@ class Query():
         if table in self.matcher:
             match_component += 'WHERE '
             for match_col in self.matcher[table]:
-                match_component += '{0}={1} AND '.format(match_col, self.matcher[table][match_col])
+                val = self.matcher[table][match_col]
+                if type(val) == str:
+                    val = '\''+val+'\''
+                match_component += '{0}={1} AND '.format(match_col, val)
             match_component = match_component[:-5]
         return match_component
     def getReadSQLs(self) -> list | None:
@@ -162,7 +173,7 @@ class Query():
     def getDeleteSQLs(self):
         sqls = []
         for table in self.query["tables"]:
-            sqlstring = "DELETE FROM {0} {2};"
+            sqlstring = "DELETE FROM {0} {1};"
             where_clause = self._matcherToSQLForTable(table)
 
             sqlstring = sqlstring.format(table,where_clause)

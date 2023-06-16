@@ -37,6 +37,7 @@ class EventBus():
             InternalMethodTypes.DELETE: EventType.NEW_DELETE_RECORD_EVENT,
             InternalMethodTypes.INSERT: EventType.NEW_INSERT_RECORD_EVENT,
             InternalMethodTypes.SET: EventType.NEW_SET_RECORD_EVENT,
+            InternalMethodTypes.UPDATE: EventType.NEW_UPDATE_RECORD_EVENT,
             }
     def registerDefaultHandlers(self):
         self.hooks[EventType.NEW_RECORD_EVENT].subscribe(self._onNewRecordEvent)
@@ -58,13 +59,13 @@ class EventBus():
     def getRecent(self):
         return self.queue[0]
     def popRecent(self):
-        self.lock()
+        # self.lock()
         if not self.queue:
-            self.unlock()
+            # self.unlock()
             return False
         
         self.queue.popleft()
-        self.unlock()
+        # self.unlock()
         return True
     
     def lock(self):
@@ -76,7 +77,6 @@ class EventBus():
     # If this number is more than the current queue length, the queue is emptied with the pop entries returned
     # 
     def flush(self):
-        
         self.lock()
         flushed = [self.queue.pop() for i in range(min(self.flush_amt,len(self.queue)))]
         self.hooks[EventType.FLUSH_EVENT].fireEvent(FlushEvent(self))

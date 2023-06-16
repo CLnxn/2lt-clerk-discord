@@ -1,7 +1,7 @@
 from typing import Any
 import discord
 import logging
-from externals.commands import ord, pay
+from externals.commands import ord, pay, remind
 from discord.flags import Intents
 from externals.notifiers.reminder import on_reminder
 
@@ -19,7 +19,7 @@ class AppClient(discord.Client):
     def subscribeCommands(self):
         ord.command(self.api).subscribeTo(self.tree)
         pay.command(self.api).subscribeTo(self.tree)
-
+        remind.command(self.api).subscribeTo(self.tree)
     def listLoadedCommands(self):
         cmds = self.tree.get_commands()
         

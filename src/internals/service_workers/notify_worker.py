@@ -8,7 +8,7 @@ from internals.service_workers import base_worker
 from internals.enums.enum import InternalTypes
 import internals.notify.notfiable as notifiable
 import internals.database.database as db
-UPDATE_PERIOD_SECONDS = 5 # every 2h
+UPDATE_PERIOD_SECONDS = 20 # every 2h
 DELETE_GRACE_INTERVAL_SECONDS = 5 # The interval where reminders with deadlines within it but before the delete query datetime are not deleted.   
 class Worker(base_worker.Worker):
     def __init__(self, controller, database) -> None:
@@ -17,7 +17,7 @@ class Worker(base_worker.Worker):
         self.database: db.Database = database
         self.name = "notify"
     def task(self):
-        logging.info(f"{self.name} worker task started.")
+        # logging.info(f"{self.name} worker task started.")
         reminders = self.queryDatabase()
         queue = deque()
         DEFAULT = None
@@ -42,15 +42,16 @@ class Worker(base_worker.Worker):
         if queue:
             self.controller.pushNotifications(queue)
         else:
-            logging.debug("queue is empty")
-
+            pass
+            # logging.debug("queue is empty")
         # delete task
         self.clearDated()
+        self.controller.last_queried_timestamp = datetime.now().timestamp()
         
-        logging.info(f"{self.name} worker task ended.")
+        # logging.info(f"{self.name} worker task ended.")
     def clearDated(self):
         now = datetime.now()
-        upper_bound = now - timedelta.seconds(DELETE_GRACE_INTERVAL_SECONDS)
+        upper_bound = now - timedelta(seconds=DELETE_GRACE_INTERVAL_SECONDS)
         self.database.deleteDatedReminders(upper_bound)
     def queryDatabase(self):
         now = datetime.now()

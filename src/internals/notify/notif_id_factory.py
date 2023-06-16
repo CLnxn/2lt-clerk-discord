@@ -3,7 +3,7 @@ class NotifIDFactory():
     saved = set()
     # might have to optimise if memory is significantly affected in production
     def createUnique():
-        id = uuid.uuid4().int
+        id = uuid.uuid4().hex
 
         if id not in NotifIDFactory.saved:
             NotifIDFactory.saved.add(id)

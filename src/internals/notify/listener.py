@@ -29,10 +29,13 @@ class ReminderListener():
         if not self._isReminder(rec):
             return
         matcher = rec.data.getMatcherForTable(InternalTypes.REMINDERS.value)
-        if InternalTypes.ID.value not in matcher:
+        hasID = InternalTypes.ID.value in matcher
+        hasTempID = InternalTypes.REMINDERS_CACHE_ID_FIELD.value in matcher
+        if not hasID and not hasTempID:
             logging.error(f"Unable to find reminder ID")
-            return 
-        id = matcher[InternalTypes.ID.value]
+            return  
+        logging.debug("in onReminderDeleteRecord")
+        id = matcher[InternalTypes.ID.value] if hasID else matcher[InternalTypes.REMINDERS_CACHE_ID_FIELD.value]
         if id in self.controller.notif_table or id in self.controller.futures_table:
             self.controller.tryCancelTask(id)
 
@@ -49,8 +52,14 @@ class ReminderListener():
         if not isLive:
             return
         id = cols.get(InternalTypes.ID.value, None)
-        id = id if id else cols.get(InternalTypes.REMINDERS_CACHE_ID_FIELD.value, None)
-        notif = notifiable.Notifiable(cols, id, datetime.fromisoformat(call_date_str))
+        use_temp_id = False
+        # if id not set (not yet written to db), use temp_id instead
+        if not id:
+            id = cols.get(InternalTypes.REMINDERS_CACHE_ID_FIELD.value, None)
+            use_temp_id = True
+
+        notif = notifiable.Notifiable(cols, id, datetime.fromisoformat(call_date_str), has_temp_id=use_temp_id)
+        logging.debug(f"in onReminderUpdateRecord, calling updateNofication")
         self.controller.updateNotification(id, notif)
 
     def onReminderSetRecord(self, event: NewRecordEvent):
@@ -59,7 +68,7 @@ class ReminderListener():
             return
         cols = rec.data.getTableColumn(InternalTypes.REMINDERS.value)
         call_date_str = cols.get(InternalTypes.REMINDERS_DATE_DEADLINE_FIELD.value, None)
-        tempID = cols.get(InternalTypes.REMINDERS_CACHE_ID_FIELD, None)
+        tempID = cols.get(InternalTypes.REMINDERS_CACHE_ID_FIELD.value, None)
         if not call_date_str:
             logging.error(f"Unable to find call_date")
             return
@@ -73,8 +82,9 @@ class ReminderListener():
         if busRef.getRecent().recordID == rec.recordID:
             logging.debug("record id is at pos 0 of eventbus queue")
             result = busRef.popRecent()
+            logging.debug(f"pop result: {result} ")
             #TODO: handler for failed result (shdnt be possible)
-            notif = notifiable.Notifiable(cols, tempID, datetime.fromisoformat(call_date_str))
+            notif = notifiable.Notifiable(cols, tempID, datetime.fromisoformat(call_date_str), has_temp_id=True)
             self.controller.scheduleTaskDirect(notif)
         else:
             logging.error("Error in SET reminder listener. busRef recID not equal")
@@ -89,12 +99,14 @@ class ReminderListener():
 
         # check if call_date is outdated 
         if call_date < now:
-            raise Exception("notify deadline date has already expired.")
+            logging.error("notify deadline date has already expired.")
+            return False
         
+        logging.debug(f"last_updated: {last_updated} {now}")
         ds = (now - last_updated).seconds
         # implies an error with notify_worker not updating on time.
         if ds > NOTIFY_WORKER_PERIOD_SECONDS:
-            raise Exception("timestamp interval from now cannot be less than Notify worker period.")
+            raise Exception(f"timestamp interval from now cannot be less than Notify worker period. {ds} {NOTIFY_WORKER_PERIOD_SECONDS}")
         dt = timedelta(seconds=NOTIFY_WORKER_PERIOD_SECONDS)
         next_update = last_updated + dt
         # case 1 call_date in current round
@@ -107,7 +119,7 @@ class ReminderListener():
         isDefaultSlower = remaining_seconds < UPDATE_DB_PERIOD_SECONDS + UPDATE_DURATION_DELAY_SECONDS
         # checks if call_date takes place in the next notify_worker query
         isInNextRound = next_update + dt >= call_date
-        
+        logging.debug(f"isLive: {isInNextRound} and {isDefaultSlower}")
         return isInNextRound and isDefaultSlower
 
 

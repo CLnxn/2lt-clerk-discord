@@ -2,7 +2,7 @@
 from datetime import datetime
 import calendar
 
-from externals.commands.exceptions.errors import CommandErrorType
+from externals.exceptions.errors import CommandErrorType
 import externals.utility.validator as validator
 
 def getLastDayMonth(date: datetime):

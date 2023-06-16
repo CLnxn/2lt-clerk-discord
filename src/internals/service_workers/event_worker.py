@@ -22,15 +22,15 @@ class Worker(base_worker.Worker):
     def createMappingRule(self):
         dbRef = self.state.database
         return {InternalMethodTypes.SET: dbRef.writeToTables, 
-                InternalMethodTypes.UPDATE: dbRef.writeToTables, 
+                InternalMethodTypes.UPDATE: dbRef.updateTables, 
                 InternalMethodTypes.INSERT: dbRef.writeToTables,
-                InternalMethodTypes.DELETE: dbRef.writeToTables
+                InternalMethodTypes.DELETE: dbRef.deleteFromTables
                 }
 
     def task(self):
-        logging.info(f"{self.name} worker task started.")
+        # logging.info(f"{self.name} worker task started.")
         self.updateDatabase()
-        logging.info(f"{self.name} worker task ended.")
+        # logging.info(f"{self.name} worker task ended.")
 
 
     def updateDatabase(self):

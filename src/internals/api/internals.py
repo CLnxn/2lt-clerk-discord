@@ -7,7 +7,7 @@ from internals.caching.usercache import UsersCache
 from internals.api.hooks import CommandApi
 from internals.api.notifier import Notifier
 from internals.notify.notfiable import NotifiableController
-
+from internals.notify.listener import ReminderListener
 
 class InternalState():
     def __init__(self) -> None:
@@ -15,6 +15,9 @@ class InternalState():
         self.events = EventBus()
         self.cache = UsersCache(self.database)
         self.notifierController = NotifiableController(self)
+        listener = ReminderListener(self.notifierController)
+        listener.subscribeToEventBus()
+
     def getAPI(self):
         return CommandApi(self.events, self.cache)
     def getNotifier(self):
@@ -25,5 +28,5 @@ class InternalState():
         self.cache.subscribeToEventBus(self.events)
         self.worker = Worker(self)
         self.worker.start()
-        # self.notifierController.start()
+        self.notifierController.start()
 

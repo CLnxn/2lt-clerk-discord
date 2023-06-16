@@ -22,7 +22,10 @@ class GuildsCache(parent.Cache):
             InternalTypes.CHANNELS.value: True, # single entry only
             InternalTypes.REMINDERS.value: False, # allows multiple entries
         }
-    
+    def _createTableEntryIdentifiers(self):
+        return {
+            InternalTypes.REMINDERS.value: (InternalTypes.ID, InternalTypes.REMINDERS_CACHE_ID_FIELD)
+        }
         
     def initCache(self):
         records = self._retrieveRecords(GUILDS_REFERENCED_TABLES)
@@ -48,7 +51,11 @@ class GuildsCache(parent.Cache):
         return self.onNewInsertRecord(event)
     def onNewDeleteRecord(self, event: NewRecordEvent):
         record = event.record
+        if record.rtype != InternalTypes.WILDCARD and record.rtype != self.CACHE_KEY_TYPE:
+            return
+        
         logging.info("onNewDeleteRecord")
+        self.deleteEntryFromCache()
     def onNewInsertRecord(self, event: NewRecordEvent):
         record = event.record
         # check if cache is compatible

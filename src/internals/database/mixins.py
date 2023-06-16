@@ -1,5 +1,5 @@
 import internals.database.database as db
-
+import logging
 
 # decorator fn: origin function must have an arg named csr
 def handleDBConnection(func):

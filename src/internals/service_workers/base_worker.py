@@ -9,12 +9,12 @@ class Worker():
         self.workerthread = WorkerThread(self.task, work_period, daemon=isDaemon)
         self.name = "base"
     def start(self):
-        logging.info(f"{self.name} worker is starting")
+        # logging.info(f"{self.name} worker is starting")
         self.workerthread.start()
         
     def stop(self):
         self.workerthread.stop()
-        logging.warning(f"{self.name} worker is stopping")
+        # logging.warning(f"{self.name} worker is stopping")
 
     def task(self):
         raise NotImplementedError(f"{self.name} worker does not have any tasks!")
